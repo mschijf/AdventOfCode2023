@@ -16,7 +16,7 @@ class Day01(test: Boolean) : PuzzleSolverAbstract(test) {
     }
 
     override fun resultPartTwo(): Any {
-        return inputLines
+        return inputLinesAlternative("example2", "input")
             .map{ it
                 .replaceWordByNumber()
                 .filter { ch -> ch.isDigit() }

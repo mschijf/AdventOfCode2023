@@ -9,9 +9,7 @@ abstract class PuzzleSolverAbstract (
 
     private val fileName = if (test) "example" else "input"
     private val path = String.format("data/december%02d", dayOfMonth)
-    protected var inputLines = getInputLines(path, fileName)
-        private set
-    private var overriddenInput = false
+    val inputLines = getInputLines(path, fileName)
 
     open fun resultPartOne(): Any = "NOT IMPLEMENTED"
     open fun resultPartTwo(): Any = "NOT IMPLEMENTED"
@@ -33,8 +31,7 @@ abstract class PuzzleSolverAbstract (
         val result = getResult()
         val timePassed = System.currentTimeMillis() - startTime
         print("Result part $puzzlePart: $result (after %d.%03d sec)".format(timePassed / 1000, timePassed % 1000))
-
-        if (overriddenInput) println("<== Overridden input") else println()
+        println()
     }
 
     private fun getDayOfMonthFromSubClassName(): Int {
@@ -49,15 +46,8 @@ abstract class PuzzleSolverAbstract (
         return dayOfMonth.toInt()
     }
 
-    fun setAlternativeInputSourcePostfix(postFix: String) {
-        overriddenInput = true
-        inputLines = getInputLines(path, fileName+postFix)
-    }
-
-    fun setDefaultInput() {
-        overriddenInput = false
-        inputLines = getInputLines(path, fileName)
-    }
+    fun inputLinesAlternative(testFile: String, liveFile: String) =
+        if (test) getInputLines(path, testFile) else getInputLines(path, liveFile)
 
     private fun getInputLines(path: String, fileName: String): List<String> {
         val file = File("$path/$fileName")
