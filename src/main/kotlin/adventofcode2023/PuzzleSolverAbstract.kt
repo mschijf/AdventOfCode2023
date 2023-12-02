@@ -3,23 +3,16 @@ package adventofcode2023
 import java.io.File
 
 abstract class PuzzleSolverAbstract (
-    val test: Boolean) {
+    private val test: Boolean) {
 
     private val dayOfMonth = getDayOfMonthFromSubClassName()
-
-    private val fileName = if (test) "example" else "input"
-    private val path = String.format("data/december%02d", dayOfMonth)
-    val inputLines = getInputLines(path, fileName)
 
     open fun resultPartOne(): Any = "NOT IMPLEMENTED"
     open fun resultPartTwo(): Any = "NOT IMPLEMENTED"
 
     fun showResult() {
-
-
         println("Day          : $dayOfMonth")
         println("Version      : ${if (test) "test" else "real"} input")
-        println("Input lines  : ${if (inputLines.isEmpty()) "NO INPUT!!" else inputLines.count()} ")
         println("---------------------------------")
 
         printResult(1) { resultPartOne().toString() }
@@ -46,12 +39,16 @@ abstract class PuzzleSolverAbstract (
         return dayOfMonth.toInt()
     }
 
-    fun inputLinesAlternative(testFile: String, liveFile: String) =
+    fun inputLines(testFile: String="example", liveFile: String="input", path:String = defaultPath()) =
         if (test) getInputLines(path, testFile) else getInputLines(path, liveFile)
+
+    private fun defaultPath() = String.format("data/december%02d", dayOfMonth)
 
     private fun getInputLines(path: String, fileName: String): List<String> {
         val file = File("$path/$fileName")
-        return if (file.exists()) file.bufferedReader().readLines() else emptyList()
+        val inputLines = if (file.exists()) file.bufferedReader().readLines() else emptyList()
+        if (inputLines.isEmpty())
+            throw Exception("No input lines!!")
+        return inputLines
     }
-
 }
