@@ -26,23 +26,31 @@ class Day02(test: Boolean) : PuzzleSolverAbstract(test) {
 }
 
 
-data class Game(val id: Int, val grabList: List<Grab>) {
+data class Game(val id: Int, val grabList: List<Map<String, Int>>) {
     companion object {
         //Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
         fun of(raw: String) =
             Game (
                 id = raw.substringBetween("Game", ":").trim().toInt(),
-                grabList = raw.substringAfter(": ").split("; ").map{Grab.of(it)}
+                grabList = raw.substringAfter(": ").split("; ").map{grabOf(it)}
             )
+
+        private fun grabOf(raw: String) =
+            raw
+                .split(", ")
+                .associate{it.substringAfter(" ") to it.substringBefore(" ").trim().toInt()}
     }
 
     fun isPossibleFor(configuration: Map<String, Int>)=
-        grabList.all {it.isPossibleFor(configuration)}
+        grabList
+            .all {countPerColorMap ->
+                countPerColorMap.none { (color, colorCount) -> configuration.getOrDefault(color, -1) < colorCount }
+            }
 
     private fun minimalSet(): Map<String, Long> {
         val result = mutableMapOf<String, Long>()
         grabList.forEach { aGrab ->
-            aGrab.cubeCountPerColor.forEach { (color, colorCount) ->
+            aGrab.forEach { (color, colorCount) ->
                 val currentMinimum = result.getOrDefault(color, 0L)
                 result[color] = max(currentMinimum, colorCount.toLong())
             }
@@ -50,24 +58,6 @@ data class Game(val id: Int, val grabList: List<Grab>) {
         return result
     }
 
-    fun power(): Long {
-        return minimalSet().values.reduce { acc, l -> acc*l }
-    }
-
-
-}
-
-data class Grab(val cubeCountPerColor: Map<String, Int>) {
-    companion object {
-        //3 blue, 4 red
-        fun of(raw: String) =
-            Grab (
-                cubeCountPerColor = raw
-                    .split(", ")
-                    .associate{it.substringAfter(" ") to it.substringBefore(" ").trim().toInt()}
-            )
-    }
-
-    fun isPossibleFor(configuration: Map<String, Int>) =
-        cubeCountPerColor.none { (color, colorCount) -> configuration.getOrDefault(color, -1) < colorCount }
+    fun power() =
+        minimalSet().values.reduce { acc, l -> acc*l }
 }
