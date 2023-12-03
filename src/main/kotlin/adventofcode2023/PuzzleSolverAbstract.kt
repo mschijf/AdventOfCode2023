@@ -1,5 +1,6 @@
 package adventofcode2023
 
+import tool.coordinate.twodimensional.pos
 import java.io.File
 
 abstract class PuzzleSolverAbstract (
@@ -51,4 +52,11 @@ abstract class PuzzleSolverAbstract (
             throw Exception("No input lines!!")
         return inputLines
     }
+
+    fun inputAsGrid(testFile: String="example", liveFile: String="input", path:String = defaultPath()) =
+        inputLines(testFile=testFile, liveFile=liveFile, path=path)
+            .flatMapIndexed { y, line ->
+                line.mapIndexed { x, ch ->  pos(x,y) to ch}
+            }
+            .toMap()
 }

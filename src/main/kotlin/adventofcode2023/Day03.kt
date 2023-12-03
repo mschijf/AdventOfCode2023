@@ -9,14 +9,8 @@ fun main() {
 
 class Day03(test: Boolean) : PuzzleSolverAbstract(test) {
 
-    private val grid = inputLines()
-        .flatMapIndexed { y, line ->
-            line.mapIndexed { x, ch ->  pos(x,y) to ch}
-        }
-        .toMap()
-
-    private val symbols =
-        grid
+    private val grid = inputAsGrid()
+    private val symbols = grid
         .filterValues{ it != '.' && !it.isDigit()}
         .keys
 
@@ -32,7 +26,9 @@ class Day03(test: Boolean) : PuzzleSolverAbstract(test) {
     }
 
     override fun resultPartTwo(): Any {
-        val gearCandidates = grid.filterValues { it == '*' }.keys
+        val gearCandidates = grid
+            .filterValues { it == '*' }
+            .keys
 
         return gearCandidates
             .map{it.numberNeighbors()}
