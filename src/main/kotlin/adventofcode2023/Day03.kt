@@ -9,63 +9,53 @@ fun main() {
 
 class Day03(test: Boolean) : PuzzleSolverAbstract(test) {
 
-    private val grid = inputLines()
-        .flatMapIndexed { y, line ->
-            line.mapIndexed { x, ch ->  pos(x,y) to ch}
-        }
-        .filter{(pos, ch) -> ch != '.'}
-        .toMap()
-
     private val symbols = inputLines()
         .flatMapIndexed { y, line ->
-            line.mapIndexed { x, ch ->  pos(x,y) to ch}
+            line.mapIndexed { x, ch ->  if (ch != '.' && !ch.isDigit()) pos(x,y) else null}
         }
-        .filter{(pos, ch) -> ch != '.' && !ch.isDigit()}
-        .map{it.first}
+        .filterNotNull()
         .toSet()
 
     private val numbers = inputLines()
-        .mapIndexed { y, line ->
+        .flatMapIndexed { y, line ->
             line.findNumbers(y)
         }
-        .flatten()
 
     private val gearCandidates = inputLines()
         .flatMapIndexed { y, line ->
-            line.mapIndexed { x, ch ->  pos(x,y) to ch}
+            line.mapIndexed { x, ch ->  if (ch == '*') pos(x,y) else null}
         }
-        .filter{(pos, ch) -> ch == '*'}
-        .map{it.first}
+        .filterNotNull()
         .toSet()
 
     override fun resultPartOne(): Any {
-        return numbers.filter { (number, posSet) -> posSet.hasNeighborWithSymbol() }.sumOf{(number, posSet) -> number}
+        return numbers
+            .filter { (number, posSet) -> posSet.hasNeighborWithSymbol() }
+            .sumOf{(number, posSet) -> number}
     }
 
     override fun resultPartTwo(): Any {
-        return gearCandidates.map{it.countNumberNeighbors()}.filter { it.count() == 2 }.map{it.first().toLong() * it.last()}.sum()
+        return gearCandidates
+            .map{it.numberNeighbors()}
+            .filter { it.count() == 2 }
+            .sumOf{it.first().toLong() * it.last()}
     }
 
-    private fun Point.countNumberNeighbors(): List<Int> {
-        var count = 0
-        val result = mutableListOf<Int>()
-        numbers.forEach { (number, set) ->
-            if (this.allWindDirectionNeighbors().intersect(set).isNotEmpty()) {
-                result += number
-            }
+    private fun Point.numberNeighbors() =
+        numbers
+            .filter { (number, set) -> this.allWindDirectionNeighbors().intersect(set).isNotEmpty() }
+            .map { (number, set) -> number }
+
+    private fun Set<Point>.hasNeighborWithSymbol() =
+        this.any {
+            it.allWindDirectionNeighbors().any { nb -> nb in symbols }
         }
-        return result
-    }
-
-    private fun Set<Point>.hasNeighborWithSymbol(): Boolean {
-        return this.any { it.allWindDirectionNeighbors().any { nb -> nb in symbols } }
-    }
 
     private fun String.findNumbers(y: Int) : List<Pair<Int, Set<Point>>> {
         var started = false
         var number = 0
         var set = mutableSetOf<Point>()
-        var result = mutableListOf<Pair<Int, Set<Point>>>()
+        val result = mutableListOf<Pair<Int, Set<Point>>>()
         for (i in this.indices) {
             if (this[i].isDigit()) {
                 started = true
