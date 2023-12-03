@@ -30,8 +30,8 @@ class Day03(test: Boolean) : PuzzleSolverAbstract(test) {
 
     override fun resultPartOne(): Any {
         return numbers
-            .filter { (number, posSet) -> posSet.hasNeighborWithSymbol() }
-            .sumOf{(number, posSet) -> number}
+            .filter { number -> number.hasNeighborWithSymbol() }
+            .sumOf{ number -> number.value }
     }
 
     override fun resultPartTwo(): Any {
@@ -43,19 +43,19 @@ class Day03(test: Boolean) : PuzzleSolverAbstract(test) {
 
     private fun Point.numberNeighbors() =
         numbers
-            .filter { (number, set) -> this.allWindDirectionNeighbors().intersect(set).isNotEmpty() }
-            .map { (number, set) -> number }
+            .filter { number -> this.allWindDirectionNeighbors().intersect(number.posSet).isNotEmpty() }
+            .map { number -> number.value }
 
-    private fun Set<Point>.hasNeighborWithSymbol() =
-        this.any {
-            it.allWindDirectionNeighbors().any { nb -> nb in symbols }
+    private fun Number.hasNeighborWithSymbol() =
+        this.posSet.any {
+            posSetPoint -> posSetPoint.allWindDirectionNeighbors().any { nb -> nb in symbols }
         }
 
-    private fun String.findNumbers(y: Int) : List<Pair<Int, Set<Point>>> {
+    private fun String.findNumbers(y: Int) : List<Number> {
         var started = false
         var number = 0
         var set = mutableSetOf<Point>()
-        val result = mutableListOf<Pair<Int, Set<Point>>>()
+        val result = mutableListOf<Number>()
         for (i in this.indices) {
             if (this[i].isDigit()) {
                 started = true
@@ -63,16 +63,18 @@ class Day03(test: Boolean) : PuzzleSolverAbstract(test) {
                 set += pos(i, y)
             } else if (started) {
                 started = false
-                result += Pair(number, set)
+                result += Number(number, set)
                 number = 0
-                set = mutableSetOf<Point>()
+                set = mutableSetOf()
             }
         }
         if (started) {
-            result += Pair(number, set)
+            result += Number(number, set)
         }
         return result
     }
 }
+
+data class Number(val value: Int, val posSet: Set<Point>)
 
 
