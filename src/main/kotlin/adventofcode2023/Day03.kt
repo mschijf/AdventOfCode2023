@@ -9,24 +9,21 @@ fun main() {
 
 class Day03(test: Boolean) : PuzzleSolverAbstract(test) {
 
-    private val symbols = inputLines()
+    private val grid = inputLines()
         .flatMapIndexed { y, line ->
-            line.mapIndexed { x, ch ->  if (ch != '.' && !ch.isDigit()) pos(x,y) else null}
+            line.mapIndexed { x, ch ->  pos(x,y) to ch}
         }
-        .filterNotNull()
-        .toSet()
+        .toMap()
+
+    private val symbols =
+        grid
+        .filterValues{ it != '.' && !it.isDigit()}
+        .keys
 
     private val numbers = inputLines()
         .flatMapIndexed { y, line ->
             line.findNumbers(y)
         }
-
-    private val gearCandidates = inputLines()
-        .flatMapIndexed { y, line ->
-            line.mapIndexed { x, ch ->  if (ch == '*') pos(x,y) else null}
-        }
-        .filterNotNull()
-        .toSet()
 
     override fun resultPartOne(): Any {
         return numbers
@@ -35,6 +32,8 @@ class Day03(test: Boolean) : PuzzleSolverAbstract(test) {
     }
 
     override fun resultPartTwo(): Any {
+        val gearCandidates = grid.filterValues { it == '*' }.keys
+
         return gearCandidates
             .map{it.numberNeighbors()}
             .filter { it.count() == 2 }
@@ -46,10 +45,15 @@ class Day03(test: Boolean) : PuzzleSolverAbstract(test) {
             .filter { number -> this.allWindDirectionNeighbors().intersect(number.posSet).isNotEmpty() }
             .map { number -> number.value }
 
+//    private fun Number.hasNeighborWithSymbol() =
+//        this.posSet.any {
+//            posSetPoint -> posSetPoint.allWindDirectionNeighbors().any { nb -> nb in symbols }
+//        }
+//
     private fun Number.hasNeighborWithSymbol() =
-        this.posSet.any {
-            posSetPoint -> posSetPoint.allWindDirectionNeighbors().any { nb -> nb in symbols }
-        }
+        this.posSet
+            .flatMap { posSetPoint -> posSetPoint.allWindDirectionNeighbors() }
+            .any { nb -> nb in symbols }
 
     private fun String.findNumbers(y: Int) : List<Number> {
         var started = false
