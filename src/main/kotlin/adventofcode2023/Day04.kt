@@ -45,8 +45,8 @@ data class Card(val id: Int, val winning: List<Int>, val having: List<Int>) {
         fun of(raw: String) =
             Card(
                 id = raw.substringBetween("Card ", ": ").trim().toInt(),
-                winning = raw.substringBetween(": ", " | ").trim().split("\\s+".toRegex()).map{it.trim().toInt()},
-                having = raw.substringAfter( " | ").trim().split("\\s+".toRegex()).map{it.trim().toInt()}
+                winning = raw.substringBetween(": ", " | ").trim().split("\\s+".toRegex()).map{it.toInt()},
+                having = raw.substringAfter( " | ").trim().split("\\s+".toRegex()).map{it.toInt()}
             )
     }
 }
