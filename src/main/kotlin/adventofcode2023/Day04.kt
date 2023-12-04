@@ -10,25 +10,26 @@ fun main() {
 class Day04(test: Boolean) : PuzzleSolverAbstract(test) {
 
     private val cardList = inputLines().map{Card.of(it)}
+
     override fun resultPartOne(): Any {
-        return cardList.map { it.determineWinning() }.sum()
+        return cardList.sumOf { it.determineWinning() }
     }
 
     override fun resultPartTwo(): Any {
-        val countCards = Array<Int>(cardList.size+1){1}
-        countCards[0] = 0
+        val countCards = Array<Int>(cardList.size){1}
         cardList.forEach { card ->
-            for (i in 1..min(card.winningNumbers(), card.id+cardList.size)) {
-                countCards[card.id+i] += countCards[card.id]
+            repeat (min(card.winningNumbers(), card.id+cardList.size)) { index ->
+                countCards[(card.id-1)+index+1] += countCards[(card.id-1)]
             }
         }
 
-        return countCards.toList().sum()
+        return countCards.sum()
     }
 }
 
 data class Card(val id: Int, val winning: List<Int>, val having: List<Int>) {
 
+    //assuming all numbers on one card are different, working with sets is ok
     fun winningNumbers(): Int {
         return winning.toSet().intersect(having.toSet()).count()
     }
