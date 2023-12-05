@@ -66,12 +66,17 @@ class Day05(test: Boolean) : PuzzleSolverAbstract(test) {
             sourceRangeList = sourceRangeList.flatMap{ aRange -> destinationRangesToSource(aRange, transformerMap["soil"]!!.transformNumberList )}
             sourceRangeList = sourceRangeList.flatMap{ aRange -> destinationRangesToSource(aRange, transformerMap["seed"]!!.transformNumberList )}
 
+            println(sourceRangeList.intersect(seedRanges))
             var smallest = Long.MAX_VALUE
-            sourceRangeList.forEach { seedRange ->
+            sourceRangeList.intersect(seedRanges).forEach { seedRange ->
                 var i = seedRange.first
                 while (i <= seedRange.last) {
-                    if (i.inRanges(seedRanges))
-                        smallest = min(smallest, seedToLocation(i))
+                    val xx = seedToLocation(i)
+                    if (xx < smallest) {
+                        println("$i --> $xx")
+                        smallest = xx
+                    }
+                    //smallest = min(smallest, seedToLocation(i))
                     i++
                 }
             }
@@ -81,6 +86,8 @@ class Day05(test: Boolean) : PuzzleSolverAbstract(test) {
         return -1L
     }
 
+// 2604983879
+// 2620224650
 
     private fun seedToLocation(seedNumber: Long): Long {
         var current = "seed"
@@ -91,10 +98,6 @@ class Day05(test: Boolean) : PuzzleSolverAbstract(test) {
             current = transformerMap[current]!!.destination
         }
         return currentNumber
-    }
-
-    private fun Long.inRanges(checkRanges: List<LongRange>) : Boolean {
-        return checkRanges.any{range -> this in range}
     }
 
     private fun destinationRangesToSource(inRange: LongRange, compareRanges: List<TransformNumber>): List<LongRange> {
@@ -120,21 +123,9 @@ class Day05(test: Boolean) : PuzzleSolverAbstract(test) {
         return result
     }
 
-    private fun List<LongRange>.fillEmptyRangesInDestination(): List<LongRange> {
-        var result = this.toMutableList()
-        var start = 0L
-        this.sortedBy { aRange -> aRange.first }.forEach { currentRange ->
-            if (start < currentRange.first) {
-                result += (start .. (currentRange.first-1))
-            }
-            start = currentRange.last+1
-        }
-        return result
-    }
-
     private fun Transformer.fillEmptyRangesInDestination(): Transformer {
-        var destinationResult = mutableListOf<LongRange>()
-        var sourceResult = mutableListOf<LongRange>()
+        val destinationResult = mutableListOf<LongRange>()
+        val sourceResult = mutableListOf<LongRange>()
         var start = 0L
         this.transformNumberList.sortedBy { t -> t.destinationRange.first }.forEach { t ->
             if (start < t.destinationRange.first) {
@@ -205,4 +196,24 @@ data class TransformNumber (val sourceRange: LongRange, val destinationRange: Lo
             )
         }
     }
+}
+
+fun List<LongRange>.intersect(other: List<LongRange>): List<LongRange> {
+    val result = mutableListOf<LongRange>()
+    this.forEach { thisRange ->
+        other.forEach {otherRange ->
+            if (thisRange.first in otherRange) {
+                if (thisRange.last in otherRange) {
+                    result.add(thisRange.first..thisRange.last)
+                } else {
+                    result.add(thisRange.first..otherRange.last)
+                }
+            } else if (thisRange.last in otherRange) {
+                result.add(otherRange.first..thisRange.last)
+            } else {
+                //do nothing
+            }
+        }
+    }
+    return result
 }
