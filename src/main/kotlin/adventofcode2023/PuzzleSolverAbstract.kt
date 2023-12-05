@@ -4,7 +4,7 @@ import tool.coordinate.twodimensional.pos
 import java.io.File
 
 abstract class PuzzleSolverAbstract (
-    private val test: Boolean) {
+    val test: Boolean) {
 
     private val dayOfMonth = getDayOfMonthFromSubClassName()
 
