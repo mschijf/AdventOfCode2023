@@ -9,7 +9,7 @@ fun main() {
 class Day01(test: Boolean) : PuzzleSolverAbstract(test) {
 
     override fun resultPartOne(): Any {
-        return inputLines()
+        return inputLines
             .map{ it.filter { ch -> ch.isDigit() } }
             .map { 10*it.first().digitToInt() + it.last().digitToInt() }
             .sum()

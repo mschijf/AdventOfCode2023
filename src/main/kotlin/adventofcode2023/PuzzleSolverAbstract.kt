@@ -11,6 +11,8 @@ abstract class PuzzleSolverAbstract (
     open fun resultPartOne(): Any = "NOT IMPLEMENTED"
     open fun resultPartTwo(): Any = "NOT IMPLEMENTED"
 
+    val inputLines = inputLines()
+
     fun showResult() {
         println("Day          : $dayOfMonth")
         println("Version      : ${if (test) "test" else "real"} input")

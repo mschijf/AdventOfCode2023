@@ -14,7 +14,7 @@ class Day03(test: Boolean) : PuzzleSolverAbstract(test) {
         .filterValues{ it != '.' && !it.isDigit()}
         .keys
 
-    private val numbers = inputLines()
+    private val numbers = inputLines
         .flatMapIndexed { y, line ->
             line.findNumbers(y)
         }

@@ -32,16 +32,16 @@ Deel twee is niet de mooiste oplossing, maar wel een manier om het efficient te 
 
 class Day05(test: Boolean) : PuzzleSolverAbstract(test) {
 
-    val seedList = inputLines()
+    private val seedList = inputLines
         .first()
         .substringAfter("seeds: ")
         .split("\\s+".toRegex()).map{it.toLong()}
 
-    val seedRanges = seedList
+    private val seedRanges = seedList
         .chunked(2)
         .map{it[0]..it[0]+it[1]-1}
 
-    val transformerMap = inputLines()
+    private val transformerMap = inputLines
         .drop(2)
         .splitByCondition { it.isEmpty() }
         .map{ Transformer.of(it) }

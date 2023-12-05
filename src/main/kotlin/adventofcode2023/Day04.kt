@@ -9,7 +9,7 @@ fun main() {
 
 class Day04(test: Boolean) : PuzzleSolverAbstract(test) {
 
-    private val cardList = inputLines().map{Card.of(it)}
+    private val cardList = inputLines.map{Card.of(it)}
 
     override fun resultPartOne(): Any {
         return cardList.sumOf { it.determineWinning() }

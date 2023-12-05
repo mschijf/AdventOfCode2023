@@ -9,7 +9,7 @@ fun main() {
 
 class Day02(test: Boolean) : PuzzleSolverAbstract(test) {
 
-    private val gameList = inputLines().map{Game.of(it)}
+    private val gameList = inputLines.map{Game.of(it)}
 
     //12 red cubes, 13 green cubes, and 14 blue cubes
     override fun resultPartOne(): Any {
