@@ -4,7 +4,7 @@ import tool.coordinate.twodimensional.pos
 import java.io.File
 
 abstract class PuzzleSolverAbstract (
-    val test: Boolean) {
+    val test: Boolean, private val hasInputFile: Boolean = true) {
 
     private val dayOfMonth = getDayOfMonthFromSubClassName()
 
@@ -50,7 +50,7 @@ abstract class PuzzleSolverAbstract (
     private fun getInputLines(path: String, fileName: String): List<String> {
         val file = File("$path/$fileName")
         val inputLines = if (file.exists()) file.bufferedReader().readLines() else emptyList()
-        if (inputLines.isEmpty())
+        if (inputLines.isEmpty() && !hasInputFile)
             throw Exception("No input lines!!")
         return inputLines
     }
