@@ -50,7 +50,7 @@ abstract class PuzzleSolverAbstract (
     private fun getInputLines(path: String, fileName: String): List<String> {
         val file = File("$path/$fileName")
         val inputLines = if (file.exists()) file.bufferedReader().readLines() else emptyList()
-        if (inputLines.isEmpty() && !hasInputFile)
+        if (inputLines.isEmpty() && hasInputFile)
             throw Exception("No input lines!!")
         return inputLines
     }
