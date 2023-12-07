@@ -6,9 +6,9 @@ fun main() {
 
 class Day07(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
 
-    private val handList= inputLines.map{ Hand.of(it) }
 
     override fun resultPartOne(): Any {
+        val handList= inputLines.map{ Hand.of(it, false) }
         return handList
             .sortedWith(compareBy { it.handValue() })
             .mapIndexed { index, hand -> (index+1) * hand.bid }
@@ -16,7 +16,11 @@ class Day07(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
     }
 
     override fun resultPartTwo(): Any {
-        return "TODO"
+        val handList= inputLines.map{ Hand.of(it, true) }
+        return handList
+            .sortedWith(compareBy { it.valueWithJokers() })
+            .mapIndexed { index, hand -> (index+1) * hand.bid }
+            .sum()
     }
 
 
@@ -24,50 +28,67 @@ class Day07(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
 
 data class Hand(val cardsOrdered: List<Char>, val cards: List<Char>, val cardListValue: Int, val bid: Int) {
     companion object {
-        fun of (raw: String): Hand {
+        fun of (raw: String, useJoker: Boolean): Hand {
             val cardList = raw.substringBefore(" ").toList()
             return Hand(
-                cardsOrdered=cardList.sortedWith(compareBy{cardValue(it)}),
+                cardsOrdered=cardList.sortedWith(compareBy{cardValue(it, useJoker)}),
                 cards=cardList,
-                cardListValue = cardList.cardListValue(),
-                bid = raw.substringAfter(" ").toInt()
+                cardListValue = cardList.cardListValue(useJoker),
+                bid = raw.substringAfter(" ").toInt(),
             )
         }
 
         //A, K, Q, J, T, 9, 8, 7, 6, 5, 4, 3, or 2
-        private fun cardValue(card: Char): Int {
+        fun cardValue(card: Char, useJoker: Boolean): Int {
             return when(card) {
                 'A' -> 14
                 'K' -> 13
                 'Q' -> 12
-                'J' -> 11
+                'J' -> if (useJoker) 0 else 11
                 'T' -> 10
                 else -> card - '0'
             }
         }
 
-        private fun List<Char>.cardListValue(): Int {
+        private fun List<Char>.cardListValue(useJoker: Boolean): Int {
             var result = 0
             this.forEach {
-                result = result * 15 + cardValue(it)
+                result = result * 15 + cardValue(it, useJoker)
             }
             return result
         }
 
     }
 
+    fun valueWithJokers(currentHand: String="", index: Int=0): Int {
+        if (index > 4) {
+            return currentHand.toList().sortedWith(compareBy{cardValue(it, true)}).localHandValue()
+        }
+        val value = if (cardsOrdered[index] == 'J') {
+            listOf('A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2').maxOf{
+                valueWithJokers(currentHand+it, index+1)
+            }
+        } else {
+            valueWithJokers(currentHand+cardsOrdered[index], index+1)
+        }
+        return value
+    }
 
-    fun handValue(): Int {
+    private fun List<Char>.localHandValue(): Int {
         return when  {
-            cardsOrdered.fiveOfAKind() -> 6_000_000 + cardListValue
-            cardsOrdered.fourOfAKind() -> 5_000_000 + cardListValue
-            cardsOrdered.fullHouse() -> 4_000_000 + cardListValue
-            cardsOrdered.threeOfAKind() -> 3_000_000 + cardListValue
-            cardsOrdered.twoPair() -> 2_000_000 + cardListValue
-            cardsOrdered.onePair() -> 1_000_000 + cardListValue
-            cardsOrdered.highCard() -> 0 + cardListValue
+            this.fiveOfAKind() -> 6_000_000 + cardListValue
+            this.fourOfAKind() -> 5_000_000 + cardListValue
+            this.fullHouse() -> 4_000_000 + cardListValue
+            this.threeOfAKind() -> 3_000_000 + cardListValue
+            this.twoPair() -> 2_000_000 + cardListValue
+            this.onePair() -> 1_000_000 + cardListValue
+            this.highCard() -> 0 + cardListValue
             else -> throw Exception ("not possible")
         }
+    }
+
+    fun handValue(): Int {
+        return cardsOrdered.localHandValue()
     }
 
     fun List<Char>.fiveOfAKind(): Boolean {
