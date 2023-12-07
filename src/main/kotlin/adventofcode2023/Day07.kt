@@ -32,7 +32,7 @@ data class Hand(val cards: List<Char>, val handValue: Int, val bid: Int) {
             val cardList = raw.substringBefore(" ").toList()
             return Hand(
                 cards=cardList,
-                handValue=if (useJoker) cardList.handValueWithJokers() else cardList.handValueWithoutJokers(),
+                handValue=if (useJoker) cardList.handValueByReplacingJokers() else cardList.handValueWithoutUsingJokers(),
                 bid=raw.substringAfter(" ").toInt(),
             )
         }
@@ -50,11 +50,7 @@ data class Hand(val cards: List<Char>, val handValue: Int, val bid: Int) {
         }
 
         private fun List<Char>.cardListValue(useJoker: Boolean): Int {
-            var result = 0
-            this.forEach {
-                result = result * 15 + cardValue(it, useJoker)
-            }
-            return result
+            return this.fold(0) { acc, card -> acc*15 + cardValue(card, useJoker) }
         }
 
         private fun totalHandValue(orderedList: List<Char>, orgCardList: List<Char>, useJoker: Boolean) : Int {
@@ -71,10 +67,16 @@ data class Hand(val cards: List<Char>, val handValue: Int, val bid: Int) {
             }
         }
 
-        private fun List<Char>.handValueWithoutJokers(): Int {
+        private fun List<Char>.handValueWithoutUsingJokers(): Int {
             val orderedList = this.sortedWith(compareBy { cardValue(it, useJoker = false) })
             return totalHandValue(orderedList, this, useJoker=false)
         }
+
+        private fun handValueUsingJokers(orgCardList:List<Char>, jokerCardList: List<Char>): Int {
+            val orderedList = jokerCardList.sortedWith(compareBy { cardValue(it, useJoker=true) })
+            return totalHandValue(orderedList, orgCardList, useJoker = true)
+        }
+
 
         private fun List<Char>.fiveOfAKind(): Boolean {
             return (this.distinct().count() == 1) && (
@@ -125,23 +127,17 @@ data class Hand(val cards: List<Char>, val handValue: Int, val bid: Int) {
             return (this.distinct().count() == 5)
         }
 
-        private fun handValueUsingJokers(orgCardList:List<Char>, jokerCardList: List<Char>): Int {
-            val orderedList = jokerCardList.sortedWith(compareBy { cardValue(it, useJoker=true) })
-            return totalHandValue(orderedList, orgCardList, useJoker = true)
-        }
-
         private val otherCards = listOf('A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2')
-
-        private fun List<Char>.handValueWithJokers(currentHand: String="", index: Int=0): Int {
+        private fun List<Char>.handValueByReplacingJokers(currentHand: String="", index: Int=0): Int {
             if (index > 4) {
                 return handValueUsingJokers(this, currentHand.toList())
             }
             return if (this[index] == 'J') {
                 otherCards.maxOf{
-                    handValueWithJokers(currentHand+it, index+1)
+                    handValueByReplacingJokers(currentHand+it, index+1)
                 }
             } else {
-                handValueWithJokers(currentHand+this[index], index+1)
+                handValueByReplacingJokers(currentHand+this[index], index+1)
             }
         }
 
