@@ -9,9 +9,22 @@ fun main() {
 
 class Day08(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
 
-    private fun List<String>.inputToInstructions() = this.first().toList()
-    private fun List<String>.inputToDesertMap() =
-        this.drop(2).associate { line ->
+    override fun resultPartOne(): Any {
+        val instructionMap = InstructionMap(inputLines)
+        return instructionMap.loopUntil("AAA") {step -> step == "ZZZ"}
+    }
+
+    override fun resultPartTwo(): Any {
+        val instructionMap = InstructionMap(inputLines)
+        val start = instructionMap.desertMap.keys.filter { it.endsWith("A") }
+        val countsPerPath = start.map{ instructionMap.loopUntil(it){ step -> step.endsWith("Z") } }
+        return countsPerPath.fold(1L) { acc, i ->  lcm(acc, i.toLong()) }
+    }
+}
+
+class InstructionMap(raw: List<String>) {
+    val instructions: List<Char> = raw.first().toList()
+    val desertMap: Map<String, Pair<String, String>> = raw.drop(2).associate { line ->
             line.substringBefore(" ").trim() to
                     Pair(
                         line.substringBetween("= (", ", ").trim(),
@@ -19,28 +32,7 @@ class Day08(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
                     )
         }
 
-    private var instructions = emptyList<Char>()
-    private var desertMap = emptyMap<String, Pair<String, String>>()
-
-    override fun resultPartOne(): Any {
-        //we have a different example in part 2, therefore we read the input in this method, instead of object variables
-        instructions = inputLines.inputToInstructions()
-        desertMap = inputLines.inputToDesertMap()
-
-        return loopUntil("AAA") {step -> step == "ZZZ"}
-    }
-
-    override fun resultPartTwo(): Any {
-        //start overriding input with special second example
-        instructions = inputLines(testFile = "example2").inputToInstructions()
-        desertMap = inputLines(testFile = "example2").inputToDesertMap()
-
-        val start = desertMap.keys.filter { it.endsWith("A") }
-        val countsPerPath = start.map{ loopUntil(it){ step -> step.endsWith("Z") } }
-        return countsPerPath.fold(1L) { acc, i ->  lcm(acc, i.toLong()) }
-    }
-
-    private fun loopUntil(start: String, stopCondition: (String) -> Boolean): Int {
+    fun loopUntil(start: String, stopCondition: (String) -> Boolean): Int {
         var count=0
         var next = start
         while (!stopCondition(next)) {
@@ -55,5 +47,4 @@ class Day08(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
         return count
     }
 }
-
 
