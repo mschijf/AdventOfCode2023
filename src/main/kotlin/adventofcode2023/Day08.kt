@@ -9,23 +9,35 @@ fun main() {
 
 class Day08(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
 
-    private val instructions = inputLines.first().toList()
-    private val desertMap = inputLines.drop(2).map { line ->
+    private fun List<String>.inputToInstructions() = this.first().toList()
+    private fun List<String>.inputToDesertMap() =
+        this.drop(2).associate { line ->
             line.substringBefore(" ").trim() to
-                Pair(
-                    line.substringBetween("= (", ", ").trim(),
-                    line.substringBetween(", ", ")").trim()
-                )
-    }.toMap()
+                    Pair(
+                        line.substringBetween("= (", ", ").trim(),
+                        line.substringBetween(", ", ")").trim()
+                    )
+        }
+
+    private var instructions = emptyList<Char>()
+    private var desertMap = emptyMap<String, Pair<String, String>>()
 
     override fun resultPartOne(): Any {
+        //we have a different example in part 2, therefore we read the input in this method, instead of object variables
+        instructions = inputLines.inputToInstructions()
+        desertMap = inputLines.inputToDesertMap()
+
         return loopUntil("AAA") {step -> step == "ZZZ"}
     }
 
     override fun resultPartTwo(): Any {
+        //start overriding input with special second example
+        instructions = inputLines(testFile = "example2").inputToInstructions()
+        desertMap = inputLines(testFile = "example2").inputToDesertMap()
+
         val start = desertMap.keys.filter { it.endsWith("A") }
-        val result = start.map{ loopUntil(it){ step -> step.endsWith("Z") } }
-        return result.fold(1L) { acc, i ->  lcm(acc, i.toLong()) }
+        val countsPerPath = start.map{ loopUntil(it){ step -> step.endsWith("Z") } }
+        return countsPerPath.fold(1L) { acc, i ->  lcm(acc, i.toLong()) }
     }
 
     private fun loopUntil(start: String, stopCondition: (String) -> Boolean): Int {
