@@ -17,31 +17,39 @@ class Day09(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
     }
 
     private fun List<Int>.differenceSequence() : List<List<Int>> {
-        val differenceSequence = mutableListOf<List<Int>>(this)
+        val differenceSequence = mutableListOf<List<Int>>()
         var next = this
         while (next.any{it != 0}) {
-            next = next.drop(1).mapIndexed { index, i -> i - next[index] }
             differenceSequence.add(next)
+            next = next.zipWithNext { a, b -> b-a }
         }
         return differenceSequence
     }
 
     private fun List<Int>.predictNextValue(): Int {
-        val extrapolateList = this.differenceSequence()
-        var newValue = 0
-        for (i in extrapolateList.size-2 downTo 0  ) {
-            newValue = extrapolateList[i].last() + newValue
-        }
-        return newValue
+        return this
+            .differenceSequence()
+            .foldRight(0){intList, acc -> acc + intList.last()}
+//
+//        val extrapolateList = this.differenceSequence()
+//        var newValue = 0
+//        extrapolateList.reversed().forEach {
+//            newValue = it.last() + newValue
+//        }
+//        return newValue
     }
 
     private fun List<Int>.predictFirstValue(): Int {
-        val extrapolateList = this.differenceSequence()
-        var newValue = 0
-        for (i in extrapolateList.size-2 downTo 0  ) {
-            newValue = extrapolateList[i].first() - newValue
-        }
-        return newValue
+        return this
+            .differenceSequence()
+            .foldRight(0){intList, acc -> intList.first() - acc}
+//
+//        val extrapolateList = this.differenceSequence()
+//        var newValue = 0
+//        extrapolateList.reversed().forEach {
+//            newValue = it.first() - newValue
+//        }
+//        return newValue
     }
 
 }
