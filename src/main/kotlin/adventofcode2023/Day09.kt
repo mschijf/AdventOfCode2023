@@ -6,23 +6,28 @@ fun main() {
 
 class Day09(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
 
-    private val historyLines = inputLines.map{it.split("\\s+".toRegex()).map{it.toInt()}}
+    private val historyLines = inputLines.map{line -> line.split("\\s+".toRegex()).map{ word -> word.toInt() }}
 
     override fun resultPartOne(): Any {
-        return historyLines.sumOf{it.extrapolate() }
+        return historyLines.sumOf{ it.predictNextValue() }
     }
 
     override fun resultPartTwo(): Any {
-        return historyLines.sumOf{it.extrapolate2() }
+        return historyLines.sumOf{ it.predictFirstValue() }
     }
 
-    private fun List<Int>.extrapolate(): Int {
-        val extrapolateList = mutableListOf<List<Int>>(this)
+    private fun List<Int>.differenceSequence() : List<List<Int>> {
+        val differenceSequence = mutableListOf<List<Int>>(this)
         var next = this
         while (next.any{it != 0}) {
             next = next.drop(1).mapIndexed { index, i -> i - next[index] }
-            extrapolateList.add(next)
+            differenceSequence.add(next)
         }
+        return differenceSequence
+    }
+
+    private fun List<Int>.predictNextValue(): Int {
+        val extrapolateList = this.differenceSequence()
         var newValue = 0
         for (i in extrapolateList.size-2 downTo 0  ) {
             newValue = extrapolateList[i].last() + newValue
@@ -30,13 +35,8 @@ class Day09(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
         return newValue
     }
 
-    private fun List<Int>.extrapolate2(): Int {
-        val extrapolateList = mutableListOf<List<Int>>(this)
-        var next = this
-        while (next.any{it != 0}) {
-            next = next.drop(1).mapIndexed { index, i -> i - next[index] }
-            extrapolateList.add(next)
-        }
+    private fun List<Int>.predictFirstValue(): Int {
+        val extrapolateList = this.differenceSequence()
         var newValue = 0
         for (i in extrapolateList.size-2 downTo 0  ) {
             newValue = extrapolateList[i].first() - newValue
