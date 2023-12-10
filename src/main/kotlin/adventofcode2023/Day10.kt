@@ -21,11 +21,11 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
 
 
     override fun resultPartTwo(): Any {
-        val cleanGrid = pipeGrid.cleanJunkPipes()
-        val extendedGrid = cleanGrid.resizeGrid()
-        val floodGrid = extendedGrid.floodGrid()
-
-        return floodGrid.values.count { it == '.' || it == '*'}
+        return pipeGrid
+            .cleanJunkPipes()
+            .zoomedOutGridToMakeSqueezedPathsVisible()
+            .floodGrid()
+            .values.count { it == '.' || it == '*'}
     }
 
     //
@@ -69,7 +69,7 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
     // Moreover, the new added empty fields have been symbolized by  a ',' instead of '.', to distinquish them from the original empty fields.
     //
 
-    private fun Map<Point, Char>.resizeGrid(): Map<Point, Char> {
+    private fun Map<Point, Char>.zoomedOutGridToMakeSqueezedPathsVisible(): Map<Point, Char> {
         val mutMap = mutableMapOf<Point, Char>()
         this.forEach { entry ->
             val x = entry.key.x * 2
