@@ -1,5 +1,8 @@
 package adventofcode2023
 
+import tool.math.quadraticFormulaSolutions
+import kotlin.math.sqrt
+
 fun main() {
     Day06(test=false).showResult()
 }
@@ -27,11 +30,22 @@ class Day06(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
         //return (0L..time).count { t -> t*(time-t) > record } * 2
     }
 
-    //result: 42948149
+
+    private fun countBeatingRecordsWithABCFormula(time: Long, record: Long): Long {
+        val sol = quadraticFormulaSolutions(-1.0, time.toDouble(), -record.toDouble())
+        val left = sol.min().toLong()+1
+        val right = sol.max().toLong()
+        return right-left+1
+    }
+
+//    Result part 1: 227850 (after 0.005 sec)
+//    Result part 2: 42948149 (after 0.062 sec)
+
     override fun resultPartTwo(): Any {
         val time = inputLines.first().substringAfter("Time:").trim().replace(" ", "").toLong()
         val distance = inputLines.last().substringAfter("Distance:").trim().replace(" ", "").toLong()
-        return countBeatingRecords(time, distance)
+//        return countBeatingRecords(time, distance)
+        return countBeatingRecordsWithABCFormula(time, distance)
     }
 }
 
