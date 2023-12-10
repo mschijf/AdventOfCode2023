@@ -2,7 +2,6 @@ package adventofcode2023
 
 import tool.coordinate.twodimensional.Point
 import tool.coordinate.twodimensional.pos
-import tool.coordinate.twodimensional.printAsGrid
 import java.util.*
 import kotlin.collections.ArrayDeque
 import kotlin.Comparator as Comparator1
@@ -23,33 +22,93 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
 
     private val pipeSymbolList = listOf('|', '-', 'L', 'J', '7', 'F')
 
-    private val cleanGrid = pipeGrid.cleanGrid()
-    private val extendedGrid = cleanGrid.extendGrid()
-    private val floodGrid = extendedGrid.initializeFloodGrid()
-
-    // 6785 is wrong answer
     override fun resultPartTwo(): Any {
-//        extendedGrid.printAsGrid {it.toString()}
-        println(extendedGrid.size)
-        //fillFloodGridRecursive(pos(-1,-1))
-        fillFloodGrid(pos(-1,-1))
-//        floodGrid.printAsGrid {it.toString()}
+        val cleanGrid = pipeGrid.cleanJunkPipes()
+        val extendedGrid = cleanGrid.resizeGrid()
+        val floodGrid = extendedGrid.initializeFloodGrid()
+        floodGrid.fillFloodGrid()
+
         return floodGrid.values.count { it == '.' || it == '*'}
     }
 
-    private fun Map<Point, Char>.cleanGrid(): Map<Point, Char> {
+    /**
+     * determine for each point the shortest path from start
+     */
+    private fun shortestPathToALlPoints() : Map<Point, Int> {
+
+        val distanceMap = mutableMapOf<Point, Int>()
+        distanceMap[start] = 0
+        val compareByDistance: Comparator1<Point> = compareBy{ distanceMap[it]?:0 }
+        val queue = PriorityQueue(compareByDistance).apply { this.add(start) }
+
+        while (queue.isNotEmpty()) {
+            val currentPos = queue.remove()
+
+            currentPos.pipeNeighbors().filterNot { nb -> nb in distanceMap }.forEach {newPos ->
+                distanceMap[newPos] = distanceMap[currentPos]!! + 1
+                queue.add(newPos)
+            }
+        }
+        return distanceMap
+    }
+
+    //replace all non-used pipes by a new symbol: '*'
+    private fun Map<Point, Char>.cleanJunkPipes(): Map<Point, Char> {
         val onPipePath = shortestPathToALlPoints()
-        val xx =  this.map {
+        return this.map {
             if (it.key in onPipePath)
                 it.key to it.value
             else if (it.value in pipeSymbolList)
                 it.key to '*'
-            else it.key to '.'
+            else
+                it.key to '.'
         }.toMap()
-        return xx
     }
 
-    private fun Map<Point, Char>.extendGrid(): Map<Point, Char> {
+    //
+    // resize the grid to make the 'squeezed' entries visible. Each element on a grid will be replaced by a 2x3 grid of
+    // symbols, as follow:
+    //
+    //
+    // +---+          +---+          +---+           +---+          +---+          +---+          +---+
+    // | J |          | L |          | | |           | 7 |          | F |          | - |          | . |
+    // +---+          +---+          +---+           +---+          +---+          +---+          +---+
+    //
+    // +---+---+      +---+---+      +---+---+       +---+---+      +---+---+      +---+---+      +---+---+
+    // | | | . |      | | | . |      | | | . |       | . | . |      | . | . |      | . | . |      | . | . |
+    // +---+---+      +---+---+      +---+---+       +---+---+      +---+---+      +---+---+      +---+---+
+    // | J | . |      | L | - |      | | | . |       | 7 | . |      | F | - |      | - | - |      | . | . |
+    // +---+---+      +---+---+      +---+---+       +---+---+      +---+---+      +---+---+      +---+---+
+    // | . | . |      | . | . |      | | | . |       | | | . |      | | | . |      | . | . |      | . | . |
+    // +---+---+      +---+---+      +---+---+       +---+---+      +---+---+      +---+---+      +---+---+
+    //
+    // As a result, this will make the grid much bigger, but with clear paths. For instance
+    // +---+---+
+    // | J | L |
+    // +---+---+
+    // | - | - |
+    // +---+---+
+    //
+    // +---+---+---+---+
+    // | | | . | | | . |
+    // +---+---+---+---+
+    // | J | . | L | - |
+    // +---+---+---+---+
+    // | . | . | . | . |
+    // +---+---+---+---+
+    // | . | . | . | . |
+    // +---+---+---+---+
+    // | - | - | - | - |
+    // +---+---+---+---+
+    // | . | . | . | . |
+    // +---+---+---+---+
+    //
+    // Furthermore, since the form of the pipes are no longer interesting, I choose to replace them all by a '#' symbol
+    // to make it more visible/readable when we print the grid.
+    // Moreover, the new added empty fields have been symbolized by  a ',' instead of '.', to distinquish them from the original empty fields.
+    //
+
+    private fun Map<Point, Char>.resizeGrid(): Map<Point, Char> {
         val mutMap = mutableMapOf<Point, Char>()
         this.forEach { entry ->
             val x = entry.key.x * 2
@@ -80,6 +139,10 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
         this[pos(x+1,y+2)]=ch12
     }
 
+    //
+    // put an extra edge with empty cells around all borders of a grid, to be sure we have a 'outside grid' defined as empty cells.
+    // I put the symbol ',' in it, to distinquish them form the orgnal empty fields ('.' fields)
+    //
     private fun Map<Point, Char>.initializeFloodGrid(): MutableMap<Point, Char> {
         val floodGrid = this.toMutableMap()
         val maxX = this.keys.maxOf { it.x }
@@ -95,57 +158,30 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
         return floodGrid
     }
 
-    private fun shortestPathToALlPoints() : Map<Point, Int> {
+    /**
+     * From a (empty) start point, outside the grid, start filling the grid with a 'flood-fill-algorithm'
+     * put a 'O' an empty cell while traversing alle adjacent cells
+     */
 
-        val distanceMap = mutableMapOf<Point, Int>()
-        distanceMap[start] = 0
-        val compareByDistance: Comparator1<Point> = compareBy{ distanceMap[it]?:0 }
-        val queue = PriorityQueue(compareByDistance).apply { this.add(start) }
-
-        while (queue.isNotEmpty()) {
-            val currentPos = queue.remove()
-
-            currentPos.pipeNeighbors().filterNot { nb -> nb in distanceMap }.forEach {newPos ->
-                distanceMap[newPos] = distanceMap[currentPos]!! + 1
-                queue.add(newPos)
-            }
-        }
-        return distanceMap
-    }
-
-    private fun fillFloodGrid(start: Point) {
-        val queue = ArrayDeque<Point>().apply { this.add(start) }
+    private fun MutableMap<Point, Char>.fillFloodGrid(startFrom: Point = pos(-1,-1) ) {
+        val queue = ArrayDeque<Point>().apply { this.add(startFrom) }
 
         while (queue.isNotEmpty()) {
             val currentPos = queue.removeFirst()
 
             currentPos.neighbors().forEach { p ->
-                val symbol = floodGrid[p]?:'?'
-                if (symbol == '.' || symbol == ',') {
-                    floodGrid[p] = 'O'
+                if (this.isEmptyCell(p)) {
+                    this[p] = 'O'
                     queue.add(p)
                 }
             }
         }
     }
 
-    private fun fillFloodGridRecursive(current: Point) {
-        if ( floodGrid[current]!! == 'O') {
-            return
-        }
-
-        if ( floodGrid[current]!! != '.' &&  floodGrid[current]!! != ',') {
-            return
-        }
-
-        floodGrid[current] = 'O'
-        current.neighbors().filter { it in floodGrid }.forEach {
-            fillFloodGridRecursive(it)
-        }
+    private fun Map<Point, Char>.isEmptyCell(pos: Point) : Boolean {
+        val symbol = this[pos]?:'?'
+        return (symbol == '.' || symbol == ',')
     }
-
-
-
 
 //    | is a vertical pipe connecting north and south.
 //    - is a horizontal pipe connecting east and west.
