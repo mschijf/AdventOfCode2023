@@ -8,7 +8,7 @@ import kotlin.collections.ArrayDeque
 import kotlin.Comparator as Comparator1
 
 fun main() {
-    Day10(test=true).showResult()
+    Day10(test=false).showResult()
 }
 
 class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
@@ -18,24 +18,34 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
 
     override fun resultPartOne(): Any {
         val dg = shortestPathToALlPoints()
-//        dg.printAsGrid(default="."){ it.toString()?:"?" }
         return dg.values.max()
     }
+
+    private val pipeSymbolList = listOf('|', '-', 'L', 'J', '7', 'F')
 
     private val cleanGrid = pipeGrid.cleanGrid()
     private val extendedGrid = cleanGrid.extendGrid()
     private val floodGrid = extendedGrid.initializeFloodGrid()
 
+    // 6785 is wrong answer
     override fun resultPartTwo(): Any {
-        cleanGrid.printAsGrid {it.toString()}
-        fillFloodGridRecursive(pos(-1,-1))
+//        extendedGrid.printAsGrid {it.toString()}
+        println(extendedGrid.size)
+        //fillFloodGridRecursive(pos(-1,-1))
+        fillFloodGrid(pos(-1,-1))
 //        floodGrid.printAsGrid {it.toString()}
         return floodGrid.values.count { it == '.' || it == '*'}
     }
 
     private fun Map<Point, Char>.cleanGrid(): Map<Point, Char> {
         val onPipePath = shortestPathToALlPoints()
-        val xx =  this.map { if (it.key in onPipePath) it.key to it.value else it.key to '*' }.toMap()
+        val xx =  this.map {
+            if (it.key in onPipePath)
+                it.key to it.value
+            else if (it.value in pipeSymbolList)
+                it.key to '*'
+            else it.key to '.'
+        }.toMap()
         return xx
     }
 
@@ -54,7 +64,7 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
                 '7' -> mutMap.setSquare(x, y, ',', '#', '#', ',', ',', ',')
                 'F' -> mutMap.setSquare(x, y, ',', '#', '#', ',', '#', ',')
                 '.' -> mutMap.setSquare(x, y, ',', '.', ',', ',', ',', ',')
-                '*' -> mutMap.setSquare(x, y, '.', '*', '.', '.', '.', '.')
+                '*' -> mutMap.setSquare(x, y, ',', '.', ',', ',', ',', ',')
                 else -> throw Exception("unexpected")
             }
         }
@@ -108,28 +118,15 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
 
         while (queue.isNotEmpty()) {
             val currentPos = queue.removeFirst()
-            floodGrid[currentPos] = 'O'
 
-            currentPos.neighbors().filter { it in floodGrid }.forEach {
-                if (floodGrid[it]!! == '.' || floodGrid[it]!! == ',') {
-                    queue.add(it)
+            currentPos.neighbors().forEach { p ->
+                val symbol = floodGrid[p]?:'?'
+                if (symbol == '.' || symbol == ',') {
+                    floodGrid[p] = 'O'
+                    queue.add(p)
                 }
             }
         }
-//
-//
-//        if ( floodGrid[current]!! == 'O') {
-//            return
-//        }
-//
-//        if ( floodGrid[current]!! != '.' &&  floodGrid[current]!! != ',') {
-//            return
-//        }
-//
-//        floodGrid[current] = 'O'
-//        current.neighbors().filter { it in floodGrid }.forEach {
-//            fillFloodGrid(it)
-//        }
     }
 
     private fun fillFloodGridRecursive(current: Point) {
@@ -143,7 +140,7 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
 
         floodGrid[current] = 'O'
         current.neighbors().filter { it in floodGrid }.forEach {
-            fillFloodGrid(it)
+            fillFloodGridRecursive(it)
         }
     }
 
@@ -174,10 +171,9 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
     }
 
     private fun Point.determineS(): Char {
-        val pipeList = listOf('|', '-', 'L', 'J', '7', 'F')
         val startPipeNeighborSet = this.pipeNeighbors().toSet()
 
-        pipeList.forEach {
+        pipeSymbolList.forEach {
             val tmp = when (it) {
                 '|' -> setOf(this.north(), this.south())
                 '-' -> setOf(this.east(), this.west())
