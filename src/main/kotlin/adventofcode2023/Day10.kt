@@ -132,7 +132,6 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
 
         while (queue.isNotEmpty()) {
             val currentPos = queue.removeFirst()
-
             currentPos.neighbors().forEach { p ->
                 if (floodGrid.isEmptyCell(p)) {
                     floodGrid[p] = 'O'
@@ -144,7 +143,7 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
     }
 
     private fun Map<Point, Char>.isEmptyCell(pos: Point) : Boolean {
-        val symbol = this[pos]?:'?'
+        val symbol = this[pos]
         return (symbol == '.' || symbol == ',')
     }
 
