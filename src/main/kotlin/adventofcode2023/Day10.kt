@@ -12,34 +12,12 @@ fun main() {
 
 class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
 
-    private val pipeGrid = inputAsGrid()
-    private val start = pipeGrid.filterValues { it == 'S' }.keys.first()
-
-    // functions for pipeGrid specific
-    private fun Point.pipeNeighbors(): Set<Point> {
-        return if (pipeGrid[this] == 'S') {
-            this.neighbors().filter { it in pipeGrid && it.pipeNeighbors().contains(this) }.toSet()
-        } else {
-            this.pipeNeighbors(pipeGrid[this]!!)
-        }
-    }
-
-    private fun Point.determineS(): Char {
-        val startPipeNeighborSet = this.pipeNeighbors()
-
-        pipeSymbolList.forEach {
-            val tmp = this.pipeNeighbors(it)
-            if (startPipeNeighborSet == tmp)
-                return it
-        }
-
-        throw Exception("unknown start pipe")
-    }
+    private val pipeGrid = PipeGrid(inputAsGrid())
 
     //------------------------------------------------------------------------------------------------------------------
 
     override fun resultPartOne(): Any {
-        val shortestPathMap = shortestPathToALlPoints()
+        val shortestPathMap = pipeGrid.shortestPathToALlPoints()
         return shortestPathMap.values.max()
     }
 
@@ -55,39 +33,6 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    /**
-     * determine for each point the shortest path from start
-     */
-    private fun shortestPathToALlPoints() : Map<Point, Int> {
-
-        val distanceMap = mutableMapOf<Point, Int>()
-        distanceMap[start] = 0
-        val compareByDistance: Comparator1<Point> = compareBy{ distanceMap[it]?:0 }
-        val queue = PriorityQueue(compareByDistance).apply { this.add(start) }
-
-        while (queue.isNotEmpty()) {
-            val currentPos = queue.remove()
-
-            currentPos.pipeNeighbors().filterNot { nb -> nb in distanceMap }.forEach {newPos ->
-                distanceMap[newPos] = distanceMap[currentPos]!! + 1
-                queue.add(newPos)
-            }
-        }
-        return distanceMap
-    }
-
-    //replace all non-used pipes by a new symbol: '*'
-    private fun Map<Point, Char>.cleanJunkPipes(): Map<Point, Char> {
-        val shortestPathMap = shortestPathToALlPoints()
-        return this.map {
-            if (it.key in shortestPathMap)
-                it.key to it.value
-            else if (it.value in pipeSymbolList)
-                it.key to '*'
-            else
-                it.key to '.'
-        }.toMap()
-    }
 
     //
     // resize the grid to make the 'squeezed' entries visible. Each element on a grid will be replaced by a 2x3 grid of
@@ -137,7 +82,7 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
         this.forEach { entry ->
             val x = entry.key.x * 2
             val y = entry.key.y * 3
-            val pipeSymbol = if (entry.value == 'S') entry.key.determineS() else entry.value
+            val pipeSymbol = entry.value
             when (pipeSymbol) {
                 '|' -> mutMap.setSquare(x, y, '#', '#', '#', ',', ',', ',')
                 '-' -> mutMap.setSquare(x, y, ',', '#', ',', ',', '#', ',')
@@ -233,3 +178,67 @@ private fun Point.pipeNeighbors(pipeSymbol: Char): Set<Point> {
     return tmp
 }
 
+class PipeGrid(private val gridMap : Map<Point, Char>) {
+    private val start = gridMap.filterValues { it == 'S' }.keys.first()
+
+    // functions for pipeGrid specific
+    private fun Point.pipeNeighbors(): Set<Point> {
+        return if (gridMap[this] == 'S') {
+            this.neighbors().filter { it in gridMap && it.pipeNeighbors().contains(this) }.toSet()
+        } else {
+            this.pipeNeighbors(gridMap[this]!!)
+        }
+    }
+
+    private fun Point.determineS(): Char {
+        val startPipeNeighborSet = this.pipeNeighbors()
+
+        pipeSymbolList.forEach {
+            val tmp = this.pipeNeighbors(it)
+            if (startPipeNeighborSet == tmp)
+                return it
+        }
+
+        throw Exception("unknown start pipe")
+    }
+
+    /**
+     * determine for each point the shortest path from start
+     */
+    fun shortestPathToALlPoints() : Map<Point, Int> {
+
+        val distanceMap = mutableMapOf<Point, Int>()
+        distanceMap[start] = 0
+        val compareByDistance: Comparator1<Point> = compareBy{ distanceMap[it]?:0 }
+        val queue = PriorityQueue(compareByDistance).apply { this.add(start) }
+
+        while (queue.isNotEmpty()) {
+            val currentPos = queue.remove()
+
+            currentPos.pipeNeighbors().filterNot { nb -> nb in distanceMap }.forEach {newPos ->
+                distanceMap[newPos] = distanceMap[currentPos]!! + 1
+                queue.add(newPos)
+            }
+        }
+        return distanceMap
+    }
+
+    //
+    // replace all non-used pipes by a new symbol: '*'
+    // replace 'S' by its underlying symbol
+    //
+    fun cleanJunkPipes(): Map<Point, Char> {
+        val shortestPathMap = shortestPathToALlPoints()
+        return gridMap.map {
+            if (it.value == 'S')
+                it.key to it.key.determineS()
+            else if (it.key in shortestPathMap)
+                it.key to it.value
+            else if (it.value in pipeSymbolList)
+                it.key to '*'
+            else
+                it.key to '.'
+        }.toMap()
+    }
+
+}
