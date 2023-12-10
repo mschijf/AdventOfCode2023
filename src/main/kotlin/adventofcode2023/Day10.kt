@@ -14,8 +14,6 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
 
     private val pipeGrid = PipeGrid(inputAsGrid())
 
-    //------------------------------------------------------------------------------------------------------------------
-
     override fun resultPartOne(): Any {
         val shortestPathMap = pipeGrid.shortestPathToALlPoints()
         return shortestPathMap.values.max()
@@ -25,31 +23,27 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
     override fun resultPartTwo(): Any {
         val cleanGrid = pipeGrid.cleanJunkPipes()
         val extendedGrid = cleanGrid.resizeGrid()
-        val floodGrid = extendedGrid.initializeFloodGrid()
-        floodGrid.fillFloodGrid()
+        val floodGrid = extendedGrid.floodGrid()
 
         return floodGrid.values.count { it == '.' || it == '*'}
     }
-
-    //------------------------------------------------------------------------------------------------------------------
-
 
     //
     // resize the grid to make the 'squeezed' entries visible. Each element on a grid will be replaced by a 2x3 grid of
     // symbols, as follow:
     //
     //
-    // +---+          +---+          +---+           +---+          +---+          +---+          +---+
-    // | J |          | L |          | | |           | 7 |          | F |          | - |          | . |
-    // +---+          +---+          +---+           +---+          +---+          +---+          +---+
-    //
-    // +---+---+      +---+---+      +---+---+       +---+---+      +---+---+      +---+---+      +---+---+
-    // | | | . |      | | | . |      | | | . |       | . | . |      | . | . |      | . | . |      | . | . |
-    // +---+---+      +---+---+      +---+---+       +---+---+      +---+---+      +---+---+      +---+---+
-    // | J | . |      | L | - |      | | | . |       | 7 | . |      | F | - |      | - | - |      | . | . |
-    // +---+---+      +---+---+      +---+---+       +---+---+      +---+---+      +---+---+      +---+---+
-    // | . | . |      | . | . |      | | | . |       | | | . |      | | | . |      | . | . |      | . | . |
-    // +---+---+      +---+---+      +---+---+       +---+---+      +---+---+      +---+---+      +---+---+
+    // +---+          +---+          +---+           +---+          +---+          +---+          +---+         +---+
+    // | J |          | L |          | | |           | 7 |          | F |          | - |          | . |         | * |
+    // +---+          +---+          +---+           +---+          +---+          +---+          +---+         +---+
+
+    // +---+---+      +---+---+      +---+---+       +---+---+      +---+---+      +---+---+      +---+---+     +---+---+
+    // | | | . |      | | | . |      | | | . |       | . | . |      | . | . |      | . | . |      | . | . |     | . | . |
+    // +---+---+      +---+---+      +---+---+       +---+---+      +---+---+      +---+---+      +---+---+     +---+---+
+    // | J | . |      | L | - |      | | | . |       | 7 | . |      | F | - |      | - | - |      | . | . |     | * | . |
+    // +---+---+      +---+---+      +---+---+       +---+---+      +---+---+      +---+---+      +---+---+     +---+---+
+    // | . | . |      | . | . |      | | | . |       | | | . |      | | | . |      | . | . |      | . | . |     | . | . |
+    // +---+---+      +---+---+      +---+---+       +---+---+      +---+---+      +---+---+      +---+---+     +---+---+
     //
     // As a result, this will make the grid much bigger, but with clear paths. For instance
     // +---+---+
@@ -72,8 +66,6 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
     // | . | . | . | . |
     // +---+---+---+---+
     //
-    // Furthermore, since the form of the pipes are no longer interesting, I choose to replace them all by a '#' symbol
-    // to make it more visible/readable when we print the grid.
     // Moreover, the new added empty fields have been symbolized by  a ',' instead of '.', to distinquish them from the original empty fields.
     //
 
@@ -84,13 +76,13 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
             val y = entry.key.y * 3
             val pipeSymbol = entry.value
             when (pipeSymbol) {
-                '|' -> mutMap.setSquare(x, y, '#', '#', '#', ',', ',', ',')
-                '-' -> mutMap.setSquare(x, y, ',', '#', ',', ',', '#', ',')
-                'L' -> mutMap.setSquare(x, y, '#', '#', ',', ',', '#', ',')
-                'J' -> mutMap.setSquare(x, y, '#', '#', ',', ',', ',', ',')
+                '|' -> mutMap.setSquare(x, y, '|', '|', '|', ',', ',', ',')
+                '-' -> mutMap.setSquare(x, y, ',', '-', ',', ',', '-', ',')
+                'L' -> mutMap.setSquare(x, y, '|', 'L', ',', ',', '-', ',')
+                'J' -> mutMap.setSquare(x, y, '|', 'J', ',', ',', ',', ',')
 
-                '7' -> mutMap.setSquare(x, y, ',', '#', '#', ',', ',', ',')
-                'F' -> mutMap.setSquare(x, y, ',', '#', '#', ',', '#', ',')
+                '7' -> mutMap.setSquare(x, y, ',', '7', '|', ',', ',', ',')
+                'F' -> mutMap.setSquare(x, y, ',', 'F', '|', ',', '-', ',')
                 '.' -> mutMap.setSquare(x, y, ',', '.', ',', ',', ',', ',')
                 '*' -> mutMap.setSquare(x, y, ',', '.', ',', ',', ',', ',')
                 else -> throw Exception("unexpected")
@@ -110,7 +102,7 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
 
     //
     // put an extra edge with empty cells around all borders of a grid, to be sure we have a 'outside grid' defined as empty cells.
-    // I put the symbol ',' in it, to distinquish them form the orgnal empty fields ('.' fields)
+    // I put the symbol ',' in it, to distinguish them form the orignal empty fields ('.' fields)
     //
     private fun Map<Point, Char>.initializeFloodGrid(): MutableMap<Point, Char> {
         val floodGrid = this.toMutableMap()
@@ -132,19 +124,23 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
      * put a 'O' an empty cell while traversing alle adjacent cells
      */
 
-    private fun MutableMap<Point, Char>.fillFloodGrid(startFrom: Point = pos(-1,-1) ) {
+    private fun Map<Point, Char>.floodGrid(): Map<Point, Char> {
+        val floodGrid = this.initializeFloodGrid()
+        val startFrom: Point = pos(-1,-1)
+
         val queue = ArrayDeque<Point>().apply { this.add(startFrom) }
 
         while (queue.isNotEmpty()) {
             val currentPos = queue.removeFirst()
 
             currentPos.neighbors().forEach { p ->
-                if (this.isEmptyCell(p)) {
-                    this[p] = 'O'
+                if (floodGrid.isEmptyCell(p)) {
+                    floodGrid[p] = 'O'
                     queue.add(p)
                 }
             }
         }
+        return floodGrid
     }
 
     private fun Map<Point, Char>.isEmptyCell(pos: Point) : Boolean {
@@ -153,6 +149,19 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
     }
 
 }
+
+class PipeGrid(private val gridMap : Map<Point, Char>) {
+    private val start = gridMap.filterValues { it == 'S' }.keys.first()
+
+    private val pipeSymbolList = listOf('|', '-', 'L', 'J', '7', 'F')
+
+    private fun Point.pipeNeighbors(): Set<Point> {
+        return if (gridMap[this] == 'S') {
+            this.neighbors().filter { it in gridMap && it.pipeNeighbors().contains(this) }.toSet()
+        } else {
+            this.pipeNeighbors(gridMap[this]!!)
+        }
+    }
 
 //    | is a vertical pipe connecting north and south.
 //    - is a horizontal pipe connecting east and west.
@@ -163,32 +172,19 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
 //    . is ground; there is no pipe in this tile.
 //    S is the starting position of the animal; there is a pipe on this tile, but your sketch doesn't show what shape the pipe has.
 
-private val pipeSymbolList = listOf('|', '-', 'L', 'J', '7', 'F')
-
-private fun Point.pipeNeighbors(pipeSymbol: Char): Set<Point> {
-    val tmp = when (pipeSymbol) {
-        '|' -> setOf(this.north(), this.south())
-        '-' -> setOf(this.east(), this.west())
-        'L' -> setOf(this.north(), this.east())
-        'J' -> setOf(this.north(), this.west())
-        '7' -> setOf(this.south(), this.west())
-        'F' -> setOf(this.south(), this.east())
-        else -> emptySet()
-    }
-    return tmp
-}
-
-class PipeGrid(private val gridMap : Map<Point, Char>) {
-    private val start = gridMap.filterValues { it == 'S' }.keys.first()
-
-    // functions for pipeGrid specific
-    private fun Point.pipeNeighbors(): Set<Point> {
-        return if (gridMap[this] == 'S') {
-            this.neighbors().filter { it in gridMap && it.pipeNeighbors().contains(this) }.toSet()
-        } else {
-            this.pipeNeighbors(gridMap[this]!!)
+    private fun Point.pipeNeighbors(pipeSymbol: Char): Set<Point> {
+        val tmp = when (pipeSymbol) {
+            '|' -> setOf(this.north(), this.south())
+            '-' -> setOf(this.east(), this.west())
+            'L' -> setOf(this.north(), this.east())
+            'J' -> setOf(this.north(), this.west())
+            '7' -> setOf(this.south(), this.west())
+            'F' -> setOf(this.south(), this.east())
+            else -> emptySet()
         }
+        return tmp
     }
+
 
     private fun Point.determineS(): Char {
         val startPipeNeighborSet = this.pipeNeighbors()
@@ -240,5 +236,4 @@ class PipeGrid(private val gridMap : Map<Point, Char>) {
                 it.key to '.'
         }.toMap()
     }
-
 }
