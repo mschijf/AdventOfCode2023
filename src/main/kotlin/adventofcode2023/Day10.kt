@@ -15,12 +15,34 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
     private val pipeGrid = inputAsGrid()
     private val start = pipeGrid.filterValues { it == 'S' }.keys.first()
 
-    override fun resultPartOne(): Any {
-        val dg = shortestPathToALlPoints()
-        return dg.values.max()
+    // functions for pipeGrid specific
+    private fun Point.pipeNeighbors(): Set<Point> {
+        return if (pipeGrid[this] == 'S') {
+            this.neighbors().filter { it in pipeGrid && it.pipeNeighbors().contains(this) }.toSet()
+        } else {
+            this.pipeNeighbors(pipeGrid[this]!!)
+        }
     }
 
-    private val pipeSymbolList = listOf('|', '-', 'L', 'J', '7', 'F')
+    private fun Point.determineS(): Char {
+        val startPipeNeighborSet = this.pipeNeighbors()
+
+        pipeSymbolList.forEach {
+            val tmp = this.pipeNeighbors(it)
+            if (startPipeNeighborSet == tmp)
+                return it
+        }
+
+        throw Exception("unknown start pipe")
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    override fun resultPartOne(): Any {
+        val shortestPathMap = shortestPathToALlPoints()
+        return shortestPathMap.values.max()
+    }
+
 
     override fun resultPartTwo(): Any {
         val cleanGrid = pipeGrid.cleanJunkPipes()
@@ -30,6 +52,8 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
 
         return floodGrid.values.count { it == '.' || it == '*'}
     }
+
+    //------------------------------------------------------------------------------------------------------------------
 
     /**
      * determine for each point the shortest path from start
@@ -54,9 +78,9 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
 
     //replace all non-used pipes by a new symbol: '*'
     private fun Map<Point, Char>.cleanJunkPipes(): Map<Point, Char> {
-        val onPipePath = shortestPathToALlPoints()
+        val shortestPathMap = shortestPathToALlPoints()
         return this.map {
-            if (it.key in onPipePath)
+            if (it.key in shortestPathMap)
                 it.key to it.value
             else if (it.value in pipeSymbolList)
                 it.key to '*'
@@ -183,6 +207,8 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
         return (symbol == '.' || symbol == ',')
     }
 
+}
+
 //    | is a vertical pipe connecting north and south.
 //    - is a horizontal pipe connecting east and west.
 //    L is a 90-degree bend connecting north and east.
@@ -192,40 +218,18 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
 //    . is ground; there is no pipe in this tile.
 //    S is the starting position of the animal; there is a pipe on this tile, but your sketch doesn't show what shape the pipe has.
 
-    private fun Point.pipeNeighbors(): List<Point> {
-        val tmp = when (pipeGrid[this]) {
-            '|' -> listOf(this.north(), this.south())
-            '-' -> listOf(this.east(), this.west())
-            'L' -> listOf(this.north(), this.east())
-            'J' -> listOf(this.north(), this.west())
-            '7' -> listOf(this.south(), this.west())
-            'F' -> listOf(this.south(), this.east())
-            'S' -> this.neighbors().filter { it.pipeNeighbors().contains(this) }
-            else -> emptyList()
-        }
-        return tmp
+private val pipeSymbolList = listOf('|', '-', 'L', 'J', '7', 'F')
+
+private fun Point.pipeNeighbors(pipeSymbol: Char): Set<Point> {
+    val tmp = when (pipeSymbol) {
+        '|' -> setOf(this.north(), this.south())
+        '-' -> setOf(this.east(), this.west())
+        'L' -> setOf(this.north(), this.east())
+        'J' -> setOf(this.north(), this.west())
+        '7' -> setOf(this.south(), this.west())
+        'F' -> setOf(this.south(), this.east())
+        else -> emptySet()
     }
-
-    private fun Point.determineS(): Char {
-        val startPipeNeighborSet = this.pipeNeighbors().toSet()
-
-        pipeSymbolList.forEach {
-            val tmp = when (it) {
-                '|' -> setOf(this.north(), this.south())
-                '-' -> setOf(this.east(), this.west())
-                'L' -> setOf(this.north(), this.east())
-                'J' -> setOf(this.north(), this.west())
-                '7' -> setOf(this.south(), this.west())
-                'F' -> setOf(this.south(), this.east())
-                else -> emptySet()
-            }
-            if (startPipeNeighborSet == tmp)
-                return it
-        }
-
-        throw Exception("unknown start pipe")
-    }
-
+    return tmp
 }
-
 
