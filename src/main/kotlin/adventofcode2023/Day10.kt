@@ -7,7 +7,7 @@ import kotlin.collections.ArrayDeque
 import kotlin.Comparator as Comparator1
 
 fun main() {
-    Day10(test=false).showResult()
+    Day10(test=true).showResult()
 }
 
 class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
@@ -21,6 +21,7 @@ class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
 
 
     override fun resultPartTwo(): Any {
+//        return pipeGrid.countInside()
         return pipeGrid
             .cleanJunkPipes()
             .zoomedOutGridToMakeSqueezedPathsVisible()
@@ -234,5 +235,20 @@ class PipeGrid(private val gridMap : Map<Point, Char>) {
             else
                 it.key to '.'
         }.toMap()
+    }
+
+
+    /**
+     * Kan ook door het aantal snijpunten te tellen van een horizontale lijne (vanaf een punt naar rechts) met de main pipeline.
+     * je moet dan nog wel bepalen wat, op basis van een set punten, een lijn is, maar dat is te doen
+     * (in dit geval: ..F----7.. is één lijn, er is dus geen snijpunt.
+     *
+     */
+    private fun Point.pointCountIntersections() : Int {
+        return 0
+    }
+
+    fun countInside(): Int {
+        return gridMap.filterValues { it == '.' }.count { it.key.pointCountIntersections() % 2 == 1}
     }
 }
