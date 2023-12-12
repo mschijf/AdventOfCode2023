@@ -10,14 +10,13 @@ class Day12(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
     override fun resultPartOne(): Any {
         val conditionRecordLines = inputLines.map { it.split("\\s+".toRegex()).first()}
         val conditionRecordGroups = inputLines.map { it.split("\\s+".toRegex()).last().split(",").map{it.toInt()}}
-        return conditionRecordLines.mapIndexed { index, line ->  calculate(line, conditionRecordGroup = conditionRecordGroups[index])}.sum()
+        return execute(conditionRecordLines, conditionRecordGroups)
     }
 
     override fun resultPartTwo(): Any {
         val conditionRecordLines = inputLines.map { it.split("\\s+".toRegex()).first().copyFive("?")}
         val conditionRecordGroups = inputLines.map { it.split("\\s+".toRegex()).last().copyFive(",").split(",").map{it.toInt()}}
-        return conditionRecordLines.mapIndexed { index, line ->  calculate(line, conditionRecordGroup = conditionRecordGroups[index])}.sum()
-//        return execute(conditionRecordLines, conditionRecordGroups)
+        return execute(conditionRecordLines, conditionRecordGroups)
     }
 
 
@@ -25,60 +24,65 @@ class Day12(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
         return "$this$delimiter$this$delimiter$this$delimiter$this$delimiter$this"
     }
 
-//    private fun execute(conditionRecordLines: List<String>, conditionRecordGroups: List<List<Int>>): Long {
-//        var sum = 0L
-//        conditionRecordLines.forEachIndexed { index, s ->
-//            val count = calculate(s, conditionRecordGroups[index])
-//            println("$index -> $count")
-//            sum += count
-//        }
-//        return sum
-//    }
-//
-    private fun calculate(inputString: String, conditionRecordGroup: List<Int>,
-                          cache:MutableMap<Pair<String, List<Int>>, Long> = mutableMapOf() ): Long {
-
-        if (inputString.isEmpty()) {
-            return if (conditionRecordGroup.isEmpty()) 1 else 0
+    private fun execute(conditionRecordLines: List<String>, conditionRecordGroups: List<List<Int>>): Long {
+        var sum = 0L
+        conditionRecordLines.forEachIndexed { index, s ->
+            val count = calculate(s, conditionRecordGroups[index])
+            println("$index -> $count")
+            sum += count
         }
+        return sum
+    }
+
+
+    private fun calculate(inputString: String, conditionRecordGroup: List<Int>, lastChar: Char=' ', hekjesGehad: Int = 0,
+                          cache:MutableMap<Triple<String, Int, List<Int>>, Long> = mutableMapOf() ): Long {
 
         if (conditionRecordGroup.isEmpty()) {
-            return if (inputString.contains("#")) 0 else 1
+            return if (inputString.contains("#")) 0 else 1L
         }
 
-        val cacheKey = Pair(inputString, conditionRecordGroup)
+        if (inputString.isEmpty()) {
+            return if (conditionRecordGroup.size == 1 && conditionRecordGroup.first() == hekjesGehad) 1 else 0
+        }
+
+        if (hekjesGehad > conditionRecordGroup.first()) {
+            return 0
+        }
+
+        val cacheKey = Triple(inputString, hekjesGehad, conditionRecordGroup)
         if (cache.contains(cacheKey)) {
             return cache[cacheKey]!!
         }
 
-
         val currentChar = inputString.first()
-        val hekjesGroupSize = conditionRecordGroup.first()
+        val remainder = inputString.drop(1)
+        val tmp = if (currentChar == '?') {
+            val metHekje = calculate(remainder, conditionRecordGroup, '#', hekjesGehad+1)
 
-        val startingWithDotOrUnknown = if (currentChar == '.' || currentChar == '?') {
-            calculate(inputString.drop(1), conditionRecordGroup, cache)
-        } else {
-            0
-        }
-
-        val startingWithHekjeOrUnknown = if (currentChar == '#' || currentChar == '?') {
-            if (inputString.impossibleToMake(hekjesGroupSize)) {
-                0
+            val metPuntje = if (lastChar == '#') {
+                if (hekjesGehad != conditionRecordGroup.first()) {
+                    0
+                } else {
+                    calculate(remainder, conditionRecordGroup.drop(1), '.', 0)
+                }
             } else {
-                calculate(inputString.drop(hekjesGroupSize + 1), conditionRecordGroup.drop(1), cache)
+                calculate(remainder, conditionRecordGroup, '.', 0)
             }
+
+            metHekje + metPuntje
         } else {
-            0
+            if (lastChar == '#' && currentChar == '.') {
+                if (hekjesGehad != conditionRecordGroup.first()) {
+                    0
+                } else {
+                    calculate(remainder, conditionRecordGroup.drop(1), currentChar, 0)
+                }
+            } else {
+                calculate(remainder, conditionRecordGroup, currentChar, if (currentChar == '#') hekjesGehad + 1 else 0)
+            }
         }
-
-        val total = startingWithDotOrUnknown + startingWithHekjeOrUnknown
-        cache[cacheKey] = total
-        return total
-    }
-
-    private fun String.impossibleToMake(hekjesGroupSize: Int) : Boolean {
-        return (hekjesGroupSize > this.length) ||
-            (this.take(hekjesGroupSize).any { it == '.' }) ||
-            (hekjesGroupSize < this.length  && this[hekjesGroupSize] == '#')
+        cache[cacheKey] = tmp
+        return tmp
     }
 }
