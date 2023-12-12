@@ -30,7 +30,8 @@ class Day12(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
     private fun execute(conditionRecordLines: List<String>, conditionRecordGroups: List<List<Int>>): Long {
         var sum = 0L
         conditionRecordLines.forEachIndexed { index, s ->
-            val count = s.permutationCount( conditionRecordGroups[index], "", 0, 0)
+//            val count = s.permutationCount( conditionRecordGroups[index], "", 0)
+            val count = s.permutationCountV2( conditionRecordGroups[index], "", 0)
             println("$index -> $count")
             sum += count
         }
@@ -54,26 +55,58 @@ class Day12(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
 //        }
 //    }
 
-    val cache = mutableMapOf<Pair<String, Int>, Long>()
-    private fun String.permutationCount(conditionRecordGroup:List<Int>, s: String, stringIndex: Int, conditionIndex: Int): Long {
+    private fun String.permutationCount(conditionRecordGroup:List<Int>, s: String, stringIndex: Int): Long {
         if (s.length == this.length) {
             val tmpConditionGroup = s.makeGroups()
             return if (conditionRecordGroup == tmpConditionGroup) 1 else 0
         }
-
         val tmpConditionGroup = s.makeGroups()
         if (!conditionRecordGroup.startsWith(tmpConditionGroup)) {
             return 0
         }
 
         val tmp = if (this[stringIndex] == '?') {
-             this.permutationCount(conditionRecordGroup, s+"#", stringIndex+1, 0) +
-                     this.permutationCount(conditionRecordGroup, s+".", stringIndex+1, 0)
+             this.permutationCount(conditionRecordGroup, s+"#", stringIndex+1) +
+                     this.permutationCount(conditionRecordGroup, s+".", stringIndex+1)
         } else {
-            this.permutationCount(conditionRecordGroup, s+this[stringIndex], stringIndex+1, 0)
+            this.permutationCount(conditionRecordGroup, s+this[stringIndex], stringIndex+1)
         }
         return tmp
     }
+
+
+    private fun String.permutationCountV2(conditionRecordGroup:List<Int>, s: String, stringIndex: Int, cache: MutableMap<Pair<Int, Int>, Long> = mutableMapOf<Pair<Int, Int>, Long>()): Long {
+        val tmpConditionGroup = s.makeGroups()
+        if (s.length == this.length) {
+            return if (conditionRecordGroup == tmpConditionGroup) 1 else 0
+        }
+        if (!conditionRecordGroup.startsWith(tmpConditionGroup)) {
+            return 0
+        }
+
+        if (s.endsWith(".")) {
+            val cacheKey = Pair(stringIndex, conditionRecordGroup.size - tmpConditionGroup.size)
+            if (cache.contains(cacheKey)) {
+                return cache[cacheKey]!!
+            }
+        }
+
+        val tmp = if (this[stringIndex] == '?') {
+            this.permutationCountV2(conditionRecordGroup, s+"#", stringIndex+1, cache) +
+                    this.permutationCountV2(conditionRecordGroup, s+".", stringIndex+1, cache)
+        } else {
+            this.permutationCountV2(conditionRecordGroup, s+this[stringIndex], stringIndex+1, cache)
+        }
+
+        if (s.endsWith(".")) {
+            val cacheKey = Pair(stringIndex, conditionRecordGroup.size - tmpConditionGroup.size)
+            cache[cacheKey] = tmp
+        }
+        return tmp
+    }
+
+
+
 
 
     private fun List<Int>.startsWith(other: List<Int>): Boolean {
