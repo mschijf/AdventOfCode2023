@@ -10,13 +10,14 @@ class Day12(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
     override fun resultPartOne(): Any {
         val conditionRecordLines = inputLines.map { it.split("\\s+".toRegex()).first()}
         val conditionRecordGroups = inputLines.map { it.split("\\s+".toRegex()).last().split(",").map{it.toInt()}}
-        return execute(conditionRecordLines, conditionRecordGroups)
+        return conditionRecordLines.mapIndexed { index, line ->  calculate(line, conditionRecordGroup = conditionRecordGroups[index])}.sum()
     }
 
     override fun resultPartTwo(): Any {
         val conditionRecordLines = inputLines.map { it.split("\\s+".toRegex()).first().copyFive("?")}
         val conditionRecordGroups = inputLines.map { it.split("\\s+".toRegex()).last().copyFive(",").split(",").map{it.toInt()}}
-        return execute(conditionRecordLines, conditionRecordGroups)
+        return conditionRecordLines.mapIndexed { index, line ->  calculate(line, conditionRecordGroup = conditionRecordGroups[index])}.sum()
+//        return execute(conditionRecordLines, conditionRecordGroups)
     }
 
 
@@ -24,17 +25,16 @@ class Day12(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
         return "$this$delimiter$this$delimiter$this$delimiter$this$delimiter$this"
     }
 
-    private fun execute(conditionRecordLines: List<String>, conditionRecordGroups: List<List<Int>>): Long {
-        var sum = 0L
-        conditionRecordLines.forEachIndexed { index, s ->
-            val count = calculate(s, conditionRecordGroups[index])
+//    private fun execute(conditionRecordLines: List<String>, conditionRecordGroups: List<List<Int>>): Long {
+//        var sum = 0L
+//        conditionRecordLines.forEachIndexed { index, s ->
+//            val count = calculate(s, conditionRecordGroups[index])
 //            println("$index -> $count")
-            sum += count
-        }
-        return sum
-    }
-
-
+//            sum += count
+//        }
+//        return sum
+//    }
+//
     private fun calculate(inputString: String, conditionRecordGroup: List<Int>,
                           cache:MutableMap<Pair<String, List<Int>>, Long> = mutableMapOf() ): Long {
 
