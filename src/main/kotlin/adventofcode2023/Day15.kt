@@ -19,17 +19,16 @@ class Day15(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
     }
 
     private fun Array<MutableList<Pair<String, Int>>>.processSequence(sequence: String) {
+        val boxIndex = sequence.label().hash()
         if (sequence.operatorIsEquals()) {
-            this[sequence.label().hash()].processOperationEquals(sequence)
+            this[boxIndex].addOrReplaceLabel(sequence.label(), sequence.focalValue())
         } else {
-            this[sequence.label().hash()].processOperationDash(sequence)
+            this[boxIndex].removeLabel(sequence.label())
         }
     }
 
-    private fun MutableList<Pair<String, Int>>.processOperationEquals(sequence: String) {
-        val label = sequence.label()
+    private fun MutableList<Pair<String, Int>>.addOrReplaceLabel(label:String, focalValue: Int) {
         val index = this.indexOfFirst { it.first == label }
-        val focalValue = sequence.focalValue()
         if (index >= 0) {
             this[index] = Pair(label, focalValue)
         } else {
@@ -37,8 +36,7 @@ class Day15(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
         }
     }
 
-    private fun MutableList<Pair<String, Int>>.processOperationDash(sequence: String) {
-        val label = sequence.label()
+    private fun MutableList<Pair<String, Int>>.removeLabel(label: String) {
         val index = this.indexOfFirst { it.first == label }
         if (index >= 0) {
             this.removeAt(index)
