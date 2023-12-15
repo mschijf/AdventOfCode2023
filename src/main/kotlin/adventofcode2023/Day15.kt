@@ -7,39 +7,45 @@ fun main() {
 class Day15(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
 
     private val sequenceList = inputLines.first().split(",")
-    private val boxes = Array(256) {mutableListOf<Pair<String, Int>>()}
 
     override fun resultPartOne(): Any {
-        return sequenceList.sumOf{it.hash() }
+        return sequenceList.sumOf{ it.hash() }
     }
 
     override fun resultPartTwo(): Any {
-        sequenceList.forEach { sequence ->
-            val label = sequence.label()
-            val boxNr = label.hash()
-            val index = boxes[boxNr].indexOfFirst { it.first == label }
-            if (sequence.operatorIsEquals()) {
-                val focus = sequence.focusValue()
-                if (index >= 0) {
-                    boxes[boxNr][index] = Pair(label, focus)
-                } else {
-                    boxes[boxNr].add(Pair(label, focus))
-                }
-            } else {
-                if (index >= 0) {
-                    boxes[boxNr].removeAt(index)
-                }
-            }
-        }
-
-//        boxes.forEachIndexed { index, pairs ->
-//            println("$index --> $pairs")
-//        }
-        
+        val boxes = Array(256) {mutableListOf<Pair<String, Int>>()}
+        sequenceList.forEach { sequence -> boxes.processSequence(sequence) }
         return boxes.mapIndexed { index, pairs -> (index+1L)*pairs.boxValue() }.sum()
     }
-    
-    fun List<Pair<String, Int>>.boxValue() : Long {
+
+    private fun Array<MutableList<Pair<String, Int>>>.processSequence(sequence: String) {
+        if (sequence.operatorIsEquals()) {
+            this[sequence.label().hash()].processOperationEquals(sequence)
+        } else {
+            this[sequence.label().hash()].processOperationDash(sequence)
+        }
+    }
+
+    private fun MutableList<Pair<String, Int>>.processOperationEquals(sequence: String) {
+        val label = sequence.label()
+        val index = this.indexOfFirst { it.first == label }
+        val focalValue = sequence.focalValue()
+        if (index >= 0) {
+            this[index] = Pair(label, focalValue)
+        } else {
+            this.add(Pair(label, focalValue))
+        }
+    }
+
+    private fun MutableList<Pair<String, Int>>.processOperationDash(sequence: String) {
+        val label = sequence.label()
+        val index = this.indexOfFirst { it.first == label }
+        if (index >= 0) {
+            this.removeAt(index)
+        }
+    }
+
+    private fun List<Pair<String, Int>>.boxValue() : Long {
         return this.mapIndexed { index, pair -> (index+1L)*pair.second }.sum()
     }
     
@@ -70,7 +76,7 @@ class Day15(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
         return this.contains("=")
     }
 
-    private fun String.focusValue(): Int {
+    private fun String.focalValue(): Int {
         return this.substringAfter("=").toInt()
     }
 
