@@ -8,6 +8,11 @@ fun main() {
     Day14(test=false).showResult()
 }
 
+/**
+ * Note: a faster implementation is below the firts sollution
+ */
+
+
 class Day14(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
 
 
@@ -111,7 +116,7 @@ class Day14(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
     //-----------------------------------------------------------------------------------------------------------------
 
     /**
-     * sneller oplossing
+     * snellere oplossing
      */
 
     private val platform = inputLines.map { line -> line.map { ch ->  ch}.toMutableList() }
