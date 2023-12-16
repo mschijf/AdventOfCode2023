@@ -66,14 +66,14 @@ class Day05(test: Boolean) : PuzzleSolverAbstract(test) {
             sourceRangeList = sourceRangeList.flatMap{ aRange -> destinationRangesToSource(aRange, transformerMap["soil"]!!.transformNumberList )}
             sourceRangeList = sourceRangeList.flatMap{ aRange -> destinationRangesToSource(aRange, transformerMap["seed"]!!.transformNumberList )}
 
-            println(sourceRangeList.intersect(seedRanges))
+//            println(sourceRangeList.intersect(seedRanges))
             var smallest = Long.MAX_VALUE
             sourceRangeList.intersect(seedRanges).forEach { seedRange ->
                 var i = seedRange.first
                 while (i <= seedRange.last) {
                     val xx = seedToLocation(i)
                     if (xx < smallest) {
-                        println("$i --> $xx")
+//                        println("$i --> $xx")
                         smallest = xx
                     }
                     //smallest = min(smallest, seedToLocation(i))
