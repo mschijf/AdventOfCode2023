@@ -4,7 +4,7 @@ fun main() {
     Day12(test=false).showResult()
 }
 
-class Day12(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
+class Day12(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Hot Springs", hasInputFile = true) {
 
 
     override fun resultPartOne(): Any {

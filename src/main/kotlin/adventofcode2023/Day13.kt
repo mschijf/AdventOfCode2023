@@ -9,7 +9,7 @@ fun main() {
     Day13(test=false).showResult()
 }
 
-class Day13(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
+class Day13(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Point of Incidence", hasInputFile = true) {
 
     private val patternList = inputLines.splitByCondition { it.isEmpty() }.map{Pattern.of(it)}
 

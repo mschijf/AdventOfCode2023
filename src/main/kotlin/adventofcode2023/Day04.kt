@@ -7,7 +7,7 @@ fun main() {
     Day04(test=false).showResult()
 }
 
-class Day04(test: Boolean) : PuzzleSolverAbstract(test) {
+class Day04(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Scratchcards", hasInputFile = true) {
 
     private val cardList = inputLines.map{Card.of(it)}
 

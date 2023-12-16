@@ -9,7 +9,7 @@ fun main() {
     Day16(test=false).showResult()
 }
 
-class Day16(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
+class Day16(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="The Floor Will Be Lava", hasInputFile = true) {
 
     private val grid = inputAsGrid()
 

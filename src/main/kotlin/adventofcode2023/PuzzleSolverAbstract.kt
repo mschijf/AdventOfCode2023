@@ -4,7 +4,9 @@ import tool.coordinate.twodimensional.pos
 import java.io.File
 
 abstract class PuzzleSolverAbstract (
-    val test: Boolean, private val hasInputFile: Boolean = true) {
+    val test: Boolean,
+    private val puzzleName: String = "",
+    private val hasInputFile: Boolean = true) {
 
     private val dayOfMonth = getDayOfMonthFromSubClassName()
 
@@ -14,12 +16,23 @@ abstract class PuzzleSolverAbstract (
     val inputLines = inputLines()
 
     fun showResult() {
-        println("Day          : $dayOfMonth")
+        val dayNumber = "%2d".format(dayOfMonth)
+        println("Day $dayNumber       : $puzzleName")
         println("Version      : ${if (test) "test" else "real"} input")
-        println("---------------------------------")
+        println("------------------------------------")
 
         printResult(1) { resultPartOne().toString() }
         printResult(2) { resultPartTwo().toString() }
+        println("==================================================================")
+    }
+
+    fun showResultShort() {
+        println("Day $dayOfMonth (${if (test) "test" else "real"} input) $puzzleName")
+        print("   ")
+        printResult(1) { resultPartOne().toString() }
+        print("   ")
+        printResult(2) { resultPartTwo().toString() }
+        println("==================================================================")
     }
 
     private fun printResult(puzzlePart: Int, getResult: () -> String ) {

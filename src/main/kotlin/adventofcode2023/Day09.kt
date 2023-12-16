@@ -4,7 +4,7 @@ fun main() {
     Day09(test=false).showResult()
 }
 
-class Day09(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
+class Day09(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Mirage Maintenance", hasInputFile = true) {
 
     private val historyLines = inputLines.map{line -> line.split("\\s+".toRegex()).map{ word -> word.toInt() }}
 

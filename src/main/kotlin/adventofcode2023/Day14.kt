@@ -9,11 +9,11 @@ fun main() {
 }
 
 /**
- * Note: a faster implementation is below the firts sollution
+ * Note: a faster implementation is below the first solution
  */
 
 
-class Day14(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
+class Day14(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Parabolic Reflector Dish", hasInputFile = true) {
 
 
 //    private val grid = inputAsGrid()

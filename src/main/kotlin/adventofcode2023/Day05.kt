@@ -30,7 +30,7 @@ Deel twee is niet de mooiste oplossing, maar wel een manier om het efficient te 
 
 // (de laagste destination kan ook een 0..x range zijn, met x de laagste startpunt van alle destination ranges
 
-class Day05(test: Boolean) : PuzzleSolverAbstract(test) {
+class Day05(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="If You Give A Seed A Fertilizer", hasInputFile = true) {
 
     private val seedList = inputLines
         .first()

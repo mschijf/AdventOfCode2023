@@ -7,7 +7,7 @@ fun main() {
     Day08(test=false).showResult()
 }
 
-class Day08(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
+class Day08(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Haunted Wasteland", hasInputFile = true) {
 
     override fun resultPartOne(): Any {
         val instructionMap = InstructionMap(inputLines)

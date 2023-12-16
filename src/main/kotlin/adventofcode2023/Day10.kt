@@ -10,7 +10,7 @@ fun main() {
     Day10(test=true).showResult()
 }
 
-class Day10(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = false) {
+class Day10(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Pipe Maze", hasInputFile = true) {
 
     private val pipeGrid = PipeGrid(inputAsGrid())
 

@@ -9,7 +9,7 @@ fun main() {
     Day11(test=true).showResult()
 }
 
-class Day11(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
+class Day11(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Cosmic Expansion", hasInputFile = true) {
 
     private val galaxyMap = inputAsGrid().filter { it.value != '.' }.keys
     private val emptyVerticalLines = galaxyMap.emptyVerticalLines()

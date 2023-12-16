@@ -4,7 +4,7 @@ fun main() {
     Day15(test=false).showResult()
 }
 
-class Day15(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
+class Day15(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Lens Library", hasInputFile = true) {
 
     private val sequenceList = inputLines.first().split(",")
 

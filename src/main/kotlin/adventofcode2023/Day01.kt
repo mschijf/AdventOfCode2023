@@ -6,7 +6,7 @@ fun main() {
     Day01(test = false).showResult()
 }
 
-class Day01(test: Boolean) : PuzzleSolverAbstract(test) {
+class Day01(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Trebuchet?!", hasInputFile = true) {
 
     override fun resultPartOne(): Any {
         return inputLines

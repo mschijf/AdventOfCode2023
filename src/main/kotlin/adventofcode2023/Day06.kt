@@ -7,7 +7,7 @@ fun main() {
     Day06(test=false).showResult()
 }
 
-class Day06(test: Boolean) : PuzzleSolverAbstract(test, hasInputFile = true) {
+class Day06(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Wait for it", hasInputFile = true) {
 
     //result: 227850
     override fun resultPartOne(): Any {

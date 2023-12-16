@@ -7,7 +7,7 @@ fun main() {
     Day03(test=false).showResult()
 }
 
-class Day03(test: Boolean) : PuzzleSolverAbstract(test) {
+class Day03(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Gear Ratios", hasInputFile = true) {
 
     private val grid = inputAsGrid()
     private val symbols = grid
