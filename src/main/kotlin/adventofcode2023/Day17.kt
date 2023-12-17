@@ -3,11 +3,7 @@ package adventofcode2023
 import tool.coordinate.twodimensional.Direction
 import tool.coordinate.twodimensional.Point
 import tool.coordinate.twodimensional.pos
-import tool.mylambdas.collectioncombination.filterCombinedItems
-import tool.mylambdas.collectioncombination.mapCombinedItems
-import tool.mylambdas.collectioncombination.toCombinedItemsList
 import java.util.*
-import kotlin.collections.ArrayDeque
 
 fun main() {
     Day17(test=false).showResult()
@@ -18,26 +14,23 @@ class Day17(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
     private val heatMap = inputAsGrid().mapValues { it.value.digitToInt() }
     private val maxX = heatMap.keys.maxOf {it.x}
     private val maxY = heatMap.keys.maxOf {it.y}
+    private val start = pos(0,0)
+    private val end = pos(maxX, maxY)
 
     override fun resultPartOne(): Any {
-        val start = pos(0,0)
-        val end = pos(maxX, maxY)
 
         return findMinimalHeatPath(start, end)
     }
 
     override fun resultPartTwo(): Any {
-        return "TODO"
+        return findMinimalHeatPathPart2(start, end)
     }
 
     private fun findMinimalHeatPath(start: Point, end: Point): Int {
         val heatSumMap = mutableMapOf<PointDirection, Int>()
 
         val compareByHeatTaken: Comparator<Pair<PointDirection, Int>> = compareBy{ it.second }
-//        val compareByHeatTaken: Comparator<Pair<PointDirection, Int>> = compareBy{ it.second + 1*(it.second - heatSumMap.getOrDefault(it.first.point, 0))}
         val queue = PriorityQueue(compareByHeatTaken).apply { this.add(Pair(PointDirection(start, Direction.RIGHT, 0), 0)) }
-
-
 
         while (queue.isNotEmpty()) {
             val (currentPointDir, currentValue) = queue.remove()
@@ -75,6 +68,66 @@ class Day17(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
         }.filter{it.point in heatMap}
     }
 
+    private fun findMinimalHeatPathPart2(start: Point, end: Point): Int {
+        val heatSumMap = mutableMapOf<PointDirection, Int>()
+
+        val compareByHeatTaken: Comparator<Pair<PointDirection, Int>> = compareBy{ it.second }
+        val queue = PriorityQueue(compareByHeatTaken).apply { this.add(Pair(PointDirection(start, Direction.RIGHT, 0), 0)) }
+
+        while (queue.isNotEmpty()) {
+            val (currentPointDir, currentValue) = queue.remove()
+
+            if (currentPointDir.point == end) {
+                return currentValue
+            }
+
+            currentPointDir.nextStepsPlusValuesPart2().forEach { pd ->
+                val newValue = currentValue + heatMap[pd.point]!!
+                if (heatSumMap.getOrDefault(pd, 999_999_999) > newValue) {
+                    heatSumMap[pd] = newValue
+                    queue.add(Pair(pd, newValue))
+                }
+            }
+        }
+        return -1
+    }
+
+    private fun PointDirection.nextStepsPlusValuesPart2(): List<PointDirection> {
+        val goLeft = this.direction.rotateLeft()
+        val goRight = this.direction.rotateRight()
+        val stepsDone = this.stepsDone
+
+        val leftFourStepsPossible = this.point.moveSteps(goLeft, 4) in heatMap
+        val rightFourStepsPossible = this.point.moveSteps(goRight, 4) in heatMap
+        val straightFourStepsPossible = this.point.moveSteps(this.direction, 4) in heatMap
+        val straightOneStepPossible = this.point.moveSteps(this.direction, 1) in heatMap
+
+        val xx = if (stepsDone == 0) {
+            val ll = if (leftFourStepsPossible) listOf(this.moveStep(goLeft)) else emptyList()
+            val rr = if (rightFourStepsPossible) listOf(this.moveStep(goRight)) else emptyList()
+            val ss = if (straightFourStepsPossible) listOf(this.moveStep(this.direction)) else emptyList()
+            ll+rr+ss
+
+        } else if (stepsDone < 4) {
+            val ss = listOf(this.moveStep(this.direction))
+            ss
+
+        } else if (stepsDone < 10) {
+            val ll = if (leftFourStepsPossible) listOf(this.moveStep(goLeft)) else emptyList()
+            val rr = if (rightFourStepsPossible) listOf(this.moveStep(goRight)) else emptyList()
+            val ss = if (straightOneStepPossible) listOf(this.moveStep(this.direction)) else emptyList()
+            ll+rr+ss
+
+        } else { //stepsDone = 10
+            val ll = if (leftFourStepsPossible) listOf(this.moveStep(goLeft)) else emptyList()
+            val rr = if (rightFourStepsPossible) listOf(this.moveStep(goRight)) else emptyList()
+            ll+rr
+
+        }
+        return xx
+    }
+
+
 }
 
 data class PointDirection(val point: Point, val direction: Direction, val stepsDone: Int) {
@@ -82,48 +135,3 @@ data class PointDirection(val point: Point, val direction: Direction, val stepsD
         return PointDirection(point.moveOneStep(dir), dir, if (this.direction == dir) stepsDone+1 else 1)
     }
 }
-
-
-//private fun PointDirection.nextSteps(): List<PointDirection> {
-//    val goLeft = this.direction.rotateLeft()
-//    val goRight = this.direction.rotateRight()
-//    return listOf(
-//        this.moveSteps(this.direction, 1), this.moveSteps(this.direction, 2), this.moveSteps(this.direction, 3),
-//        this.moveSteps(goLeft, 1), this.moveSteps(goLeft, 2), this.moveSteps(goLeft, 3),
-//        this.moveSteps(goRight, 1), this.moveSteps(goRight, 2), this.moveSteps(goRight, 3),
-//    ).filter{it.point in heatMap}
-//}
-//
-
-//private fun PointDirection.nextStepsPlusValues(): List<Pair<PointDirection, Int>> {
-//    val goLeft = this.direction.rotateLeft()
-//    val goRight = this.direction.rotateRight()
-//
-//    val p1=this.moveSteps(this.direction, 1)
-//    val p2=this.moveSteps(this.direction, 2)
-//    val p3=this.moveSteps(this.direction, 3)
-//    val v1 = heatMap.getOrDefault(p1.point, 999_999)
-//    val v2 = heatMap.getOrDefault(p2.point, 999_999) + v1
-//    val v3 = heatMap.getOrDefault(p3.point, 999_999) + v2
-//
-//    val p11=this.moveSteps(goLeft, 1)
-//    val p12=this.moveSteps(goLeft, 2)
-//    val p13=this.moveSteps(goLeft, 3)
-//    val v11 = heatMap.getOrDefault(p11.point, 999_999)
-//    val v12 = heatMap.getOrDefault(p12.point, 999_999) + v11
-//    val v13 = heatMap.getOrDefault(p13.point, 999_999) + v12
-//
-//    val p21=this.moveSteps(goRight, 1)
-//    val p22=this.moveSteps(goRight, 2)
-//    val p23=this.moveSteps(goRight, 3)
-//    val v21 = heatMap.getOrDefault(p21.point, 999_999)
-//    val v22 = heatMap.getOrDefault(p22.point, 999_999) + v21
-//    val v23 = heatMap.getOrDefault(p23.point, 999_999) + v22
-//
-//    return listOf(
-//        Pair(p1, v1), Pair(p2, v2), Pair(p3, v3),
-//        Pair(p11, v11), Pair(p12, v12), Pair(p13, v13),
-//        Pair(p21, v21), Pair(p22, v22), Pair(p23, v23),
-//    ).filter{it.first.point in heatMap}
-//}
-
