@@ -100,7 +100,9 @@ class Day17(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Clumsy Cruci
     }
 
     private fun Point.isMovePossible(direction: Direction, steps: Int) : Boolean {
-        return this.moveSteps(direction, steps) in heatMap
+        with(this.moveSteps(direction, steps)) {
+            return x in 0..maxX && y in 0 .. maxY
+        }
     }
 }
 
