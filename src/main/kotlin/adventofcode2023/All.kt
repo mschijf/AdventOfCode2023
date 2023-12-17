@@ -18,4 +18,6 @@ fun main() {
     Day14(test).showResultShort()
     Day15(test).showResultShort()
     Day16(test).showResultShort()
+    Day17(test).showResultShort()
 }
+
