@@ -37,7 +37,7 @@ class Day16(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="The Floor Wi
         while (oldSize != beamRayPointHistory.size) {
             oldSize = beamRayPointHistory.size
             beamList = beamList
-                .iterate()
+                .moveAllOneStep()
                 .filterNot { it in beamRayPointHistory }
                 .also {
                     beamRayPointHistory.addAll(it)
@@ -48,7 +48,7 @@ class Day16(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="The Floor Wi
     }
 
 
-    private fun List<BeamRayPoint>.iterate(): List<BeamRayPoint> {
+    private fun List<BeamRayPoint>.moveAllOneStep(): List<BeamRayPoint> {
         return this
             .flatMap{it.move()}
             .filter{it.position in grid}
