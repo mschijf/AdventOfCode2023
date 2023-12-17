@@ -9,7 +9,7 @@ fun main() {
     Day17(test=false).showResult()
 }
 
-class Day17(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInputFile = true) {
+class Day17(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Clumsy Crucible", hasInputFile = true) {
 
     private val heatMap = inputAsGrid().mapValues { it.value.digitToInt() }
     private val maxX = heatMap.keys.maxOf {it.x}
