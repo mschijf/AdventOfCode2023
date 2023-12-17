@@ -2,22 +2,21 @@ package adventofcode2023
 
 fun main() {
     val test = false
-    Day01(test).showResultShort()
-    Day02(test).showResultShort()
-    Day03(test).showResultShort()
-    Day04(test).showResultShort()
-    Day05(test).showResultShort()
-    Day06(test).showResultShort()
-    Day07(test).showResultShort()
-    Day08(test).showResultShort()
-    Day09(test).showResultShort()
-    Day10(test).showResultShort()
-    Day11(test).showResultShort()
-    Day12(test).showResultShort()
-    Day13(test).showResultShort()
-    Day14(test).showResultShort()
-    Day15(test).showResultShort()
-    Day16(test).showResultShort()
-    Day17(test).showResultShort()
+    (1..25).forEach { dayNr -> runDay(dayNr, test) }
+}
+
+fun runDay(dayNr: Int, test: Boolean) {
+    val className = "Day%02d".format(dayNr)
+    val packageName = "adventofcode2023"
+    try {
+        val kClass = Class.forName("$packageName.$className").kotlin
+        val method = kClass.members.find { it.name == "showResultShort" }
+        val obj = kClass.constructors.first().call(test)
+        method!!.call(obj)
+    } catch(e: ClassNotFoundException) {
+        println("$className not implemented (yet)")
+    } catch (otherE: Exception) {
+        println("$className runs with exception ${otherE.cause}")
+    }
 }
 
