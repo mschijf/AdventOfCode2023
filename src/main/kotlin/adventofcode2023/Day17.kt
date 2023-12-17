@@ -26,11 +26,15 @@ class Day17(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
         return findMinimalHeatPath(ultra = true)
     }
 
+    /**
+     * priority queue based on shortest path done so far.
+     * 'heatSumMap' checks if you have visited a field, ith the same 'history'
+     */
     private fun findMinimalHeatPath(ultra: Boolean): Int {
-        val heatSumMap = mutableMapOf<PointDirection, Int>()
+        val heatSumMap = mutableMapOf<PointStatus, Int>()
 
-        val compareByHeatTaken: Comparator<Pair<PointDirection, Int>> = compareBy{ it.second }
-        val queue = PriorityQueue(compareByHeatTaken).apply { this.add(Pair(PointDirection(start, Direction.RIGHT, 0), 0)) }
+        val compareByHeatTaken: Comparator<Pair<PointStatus, Int>> = compareBy{ it.second }
+        val queue = PriorityQueue(compareByHeatTaken).apply { this.add(Pair(PointStatus(start, Direction.RIGHT, 0), 0)) }
 
         while (queue.isNotEmpty()) {
             val (currentPointDir, currentValue) = queue.remove()
@@ -39,70 +43,69 @@ class Day17(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
                 return currentValue
             }
 
-            currentPointDir.nextStepsPlusValues(ultra).forEach { pd ->
-                val newValue = currentValue + heatMap[pd.point]!!
-                if (heatSumMap.getOrDefault(pd, 999_999_999) > newValue) {
-                    heatSumMap[pd] = newValue
-                    queue.add(Pair(pd, newValue))
+            currentPointDir.nextStepsPlusValues(ultra).forEach { pointStatus ->
+                val newValue = currentValue + heatMap[pointStatus.point]!!
+                if (heatSumMap.getOrDefault(pointStatus, 999_999_999) > newValue) {
+                    heatSumMap[pointStatus] = newValue
+                    queue.add(Pair(pointStatus, newValue))
                 }
             }
         }
         return -1
     }
 
-    private fun PointDirection.nextStepsPlusValues(ultra: Boolean): List<PointDirection> {
+    /**
+     * Voor deel 1 (gewone Crucible) geldt:
+     *    - je mag maximaal 3 stappen 'rechtdoor', daarna moet je een bocht maken
+     *
+     * Voor deel 2 (ultra crucible)
+     *    - je moet minimaal 4 stappen rechtdoor
+     *    - je mag maximaal 10 stappen rechtdoor, daarna een bocht
+     */
+    private fun PointStatus.nextStepsPlusValues(ultra: Boolean): List<PointStatus> {
         val goLeft = this.direction.rotateLeft()
         val goRight = this.direction.rotateRight()
-        val stepsDone = this.stepsDone
+        val stepsDone = this.stepsDoneInDirection
 
         if (!ultra) {
-            return if (stepsDone < 3) {
-                listOf(
-                    this.moveStep(this.direction),
-                    this.moveStep(goLeft),
-                    this.moveStep(goRight),
-                )
-            } else {
-                listOf(
-                    this.moveStep(goLeft),
-                    this.moveStep(goRight),
-                )
-            }.filter{it.point in heatMap}
+
+            return listOfNotNull(
+                if (stepsDone < 3) this.moveStep(this.direction) else null,
+                this.moveStep(goLeft),
+                this.moveStep(goRight),
+            ).filter{it.point in heatMap}
 
         } else {
-            val leftFourStepsPossible = this.point.moveSteps(goLeft, 4) in heatMap
-            val rightFourStepsPossible = this.point.moveSteps(goRight, 4) in heatMap
-            val straightFourStepsPossible = this.point.moveSteps(this.direction, 4) in heatMap
-            val straightOneStepPossible = this.point.moveSteps(this.direction, 1) in heatMap
-
-            return if (stepsDone == 0) {
+            return if (stepsDone == 0) { //alleen bij de start in punt 0,0
                 listOfNotNull(
-                    if (leftFourStepsPossible) this.moveStep(goLeft) else null,
-                    if (rightFourStepsPossible) this.moveStep(goRight) else null,
-                    if (straightFourStepsPossible) this.moveStep(this.direction) else null
+                    if (this.point.isMovePossible(goLeft, 4)) this.moveStep(goLeft) else null,
+                    if (this.point.isMovePossible(goRight, 4)) this.moveStep(goRight) else null,
+                    if (this.point.isMovePossible(this.direction, 4)) this.moveStep(this.direction) else null
                 )
-            } else if (stepsDone < 4) {
+            } else if (stepsDone in 1.. 3) {
                 listOf(this.moveStep(this.direction))
-            } else if (stepsDone < 10) {
+            } else if (stepsDone in 4 .. 9) {
                 listOfNotNull(
-                    if (leftFourStepsPossible) this.moveStep(goLeft) else null,
-                    if (rightFourStepsPossible) this.moveStep(goRight) else null,
-                    if (straightOneStepPossible) this.moveStep(this.direction) else null
+                    if (this.point.isMovePossible(goLeft, 4)) this.moveStep(goLeft) else null,
+                    if (this.point.isMovePossible(goRight, 4)) this.moveStep(goRight) else null,
+                    if (this.point.isMovePossible(this.direction, 1)) this.moveStep(this.direction) else null
                 )
             } else { //stepsDone = 10
                 listOfNotNull(
-                    if (leftFourStepsPossible) this.moveStep(goLeft) else null,
-                    if (rightFourStepsPossible) this.moveStep(goRight) else null,
+                    if (this.point.isMovePossible(goLeft, 4)) this.moveStep(goLeft) else null,
+                    if (this.point.isMovePossible(goRight, 4)) this.moveStep(goRight) else null,
                 )
             }
         }
+    }
 
-
+    private fun Point.isMovePossible(direction: Direction, steps: Int) : Boolean {
+        return this.moveSteps(direction, steps) in heatMap
     }
 }
 
-data class PointDirection(val point: Point, val direction: Direction, val stepsDone: Int) {
-    fun moveStep(dir: Direction): PointDirection {
-        return PointDirection(point.moveOneStep(dir), dir, if (this.direction == dir) stepsDone+1 else 1)
+data class PointStatus(val point: Point, val direction: Direction, val stepsDoneInDirection: Int) {
+    fun moveStep(dir: Direction): PointStatus {
+        return PointStatus(point.moveOneStep(dir), dir, if (this.direction == dir) stepsDoneInDirection+1 else 1)
     }
 }
