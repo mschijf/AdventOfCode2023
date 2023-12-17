@@ -32,7 +32,6 @@ class Day16(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="The Floor Wi
         var beamList: List<BeamRayPoint> = listOf(startConfiguration)
 
         val beamRayPointHistory = mutableSetOf<BeamRayPoint>()
-        val gridEnergy = mutableSetOf<Point>()
 
         var oldSize = -1
         while (oldSize != beamRayPointHistory.size) {
@@ -42,13 +41,10 @@ class Day16(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="The Floor Wi
                 .filterNot { it in beamRayPointHistory }
                 .also {
                     beamRayPointHistory.addAll(it)
-                    gridEnergy.addAll(it.map{p->p.position})
                 }
         }
 
-//        grid.keys.printAsGrid { if (gridEnergy.contains(it)) "#" else "."}
-
-        return gridEnergy.size
+        return beamRayPointHistory.distinctBy { it.position }.size
     }
 
 
