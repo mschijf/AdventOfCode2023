@@ -42,7 +42,7 @@ class Day18(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Lavaduct Lag
         val allEdgePoints = allUniqueLines.flatMap { listOf(it.from,it.to) }
         val allUniqueEdgePoints = allEdgePoints.distinct()
 
-        return totalArea - totalLineLength + uniqueLineLength - allEdgePoints.size + allUniqueEdgePoints.size
+        return totalArea// - totalLineLength + uniqueLineLength //- allEdgePoints.size + allUniqueEdgePoints.size
 
 
 //        val all = border.floodGrid() + border
@@ -168,11 +168,6 @@ data class Rectangle(val topLeft: Point, val topRight: Point, val bottomLeft: Po
     fun area() : Long {
         return Line(topLeft, topRight).length().toLong() * Line(topRight, bottomRight).length()
     }
-
-    fun length() : Int {
-        return toLines().sumOf { it.length() } - 3
-    }
-
 }
 
 
