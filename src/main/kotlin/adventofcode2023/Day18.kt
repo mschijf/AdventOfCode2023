@@ -14,7 +14,7 @@ fun main() {
 class Day18(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Lavaduct Lagoon", hasInputFile = true) {
 
     override fun resultPartOne(): Any {
-        val digPlan = inputLines.map {DigAction.of(it)}
+        val digPlan = inputLines.map {DigAction.ofPart1(it)}
         val borderLines = digPlan.digIt()
         return borderLines.calculateArea()
     }
@@ -25,7 +25,7 @@ class Day18(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Lavaduct Lag
         return borderLines.calculateArea()
     }
 
-    private fun Set<Line>.calculateArea(): Long {
+    private fun List<Line>.calculateArea(): Long {
         val borderLinesVertical = this.filter {it.isVertical}.toSet()
         val horLines = this.divideIntoHorizontalLines()
         val verLines = this.divideIntoVerticalLines()
@@ -40,8 +40,8 @@ class Day18(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Lavaduct Lag
     }
 
 
-    private fun List<DigAction>.digIt(): Set<Line> {
-        val result = mutableSetOf<Line>()
+    private fun List<DigAction>.digIt(): List<Line> {
+        val result = mutableListOf<Line>()
         var current = pos(0,0)
         var lastCorner = CornerType.D90
         this.forEachIndexed {index, action ->
@@ -101,54 +101,51 @@ class Day18(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Lavaduct Lag
         }
     }
 
-}
+    private fun List<Line>.divideIntoHorizontalLines(): List<Line> {
+        return this
+            .filter { it.isHorizontal }
+            .flatMap { listOf(it.from.x, it.to.x) }
+            .distinct()
+            .sortedBy { it }
+            .zipWithNext { a, b -> Line(pos(a,0),pos(b,0) ) }
+    }
 
+    private fun List<Line>.divideIntoVerticalLines(): List<Line> {
+        return this
+            .filter { it.isVertical }
+            .flatMap { listOf(it.from.y, it.to.y) }
+            .distinct()
+            .sortedBy { it }
+            .zipWithNext { a, b -> Line(pos(0, a),pos(0, b) ) }
+    }
 
-private fun Set<Line>.divideIntoHorizontalLines(): List<Line> {
-    return this
-        .filter { it.isHorizontal }
-        .flatMap { listOf(it.from.x, it.to.x) }
-        .distinct()
-        .sortedBy { it }
-        .zipWithNext { a, b -> Line(pos(a,0),pos(b,0) ) }
-}
-
-private fun Set<Line>.divideIntoVerticalLines(): List<Line> {
-    return this
-        .filter { it.isVertical }
-        .flatMap { listOf(it.from.y, it.to.y) }
-        .distinct()
-        .sortedBy { it }
-        .zipWithNext { a, b -> Line(pos(0, a),pos(0, b) ) }
-}
-
-private fun makeRectangles(horizontalLines: List<Line>, verticalLines: List<Line>) : List<Rectangle> {
-    return horizontalLines.flatMap { hor ->
-        verticalLines.map { ver ->
-            val maxX = max(hor.from.x, hor.to.x)
-            val minX = min(hor.from.x, hor.to.x)
-            val maxY = max(ver.from.y, ver.to.y)
-            val minY = min(ver.from.y, ver.to.y)
-            Rectangle(
-                pos(minX, minY),
-                pos(maxX, minY),
-                pos(minX, maxY),
-                pos(maxX, maxY)
-            )
+    private fun makeRectangles(horizontalLines: List<Line>, verticalLines: List<Line>) : List<Rectangle> {
+        return horizontalLines.flatMap { hor ->
+            verticalLines.map { ver ->
+                val maxX = max(hor.from.x, hor.to.x)
+                val minX = min(hor.from.x, hor.to.x)
+                val maxY = max(ver.from.y, ver.to.y)
+                val minY = min(ver.from.y, ver.to.y)
+                Rectangle(
+                    pos(minX, minY),
+                    pos(maxX, maxY)
+                )
+            }
         }
+    }
+
+    private fun Rectangle.countLinesToTheRight(verticaLineSet: Set<Line>): Int {
+        val xValue = this.topLeft.x + 0.5
+        val yValue = this.topLeft.y + this.topLeft.distanceTo(this.bottomLeft())*1.0 / 2.0
+        return verticaLineSet
+            .count{vl ->
+                vl.from.x > xValue  &&
+                        yValue > min(vl.from.y.toDouble(), vl.to.y.toDouble()) &&
+                        yValue < max(vl.from.y.toDouble(), vl.to.y.toDouble())
+            }
     }
 }
 
-private fun Rectangle.countLinesToTheRight(verticaLineSet: Set<Line>): Int {
-    val xValue = this.topLeft.x + 0.5
-    val yValue = this.topLeft.y + this.topLeft.distanceTo(this.bottomLeft)*1.0 / 2.0
-    return verticaLineSet
-        .count{vl ->
-            vl.from.x > xValue  &&
-                    yValue > min(vl.from.y.toDouble(), vl.to.y.toDouble()) &&
-                    yValue < max(vl.from.y.toDouble(), vl.to.y.toDouble())
-        }
-}
 
 data class Line(val from: Point, val to: Point) {
     val isHorizontal = from.y == to.y
@@ -156,18 +153,21 @@ data class Line(val from: Point, val to: Point) {
     fun length() = from.distanceTo(to)
 }
 
-data class Rectangle(val topLeft: Point, val topRight: Point, val bottomLeft: Point, val bottomRight: Point) {
+data class Rectangle(val topLeft: Point, val bottomRight: Point) {
     fun toLines() : List<Line> {
         return listOf(
-            Line(topLeft, topRight),
-            Line(topRight, bottomRight),
-            Line(bottomLeft, bottomRight),
-            Line(topLeft, bottomLeft),
+            Line(topLeft, topRight()),
+            Line(topRight(), bottomRight),
+            Line(bottomLeft(), bottomRight),
+            Line(topLeft, bottomLeft()),
         )
     }
 
+    fun topRight(): Point = pos(bottomRight.x, topLeft.y)
+    fun bottomLeft(): Point = pos(topLeft.x, bottomRight.y)
+
     fun area() : Long {
-        return Line(topLeft, topRight).length().toLong() * Line(topRight, bottomRight).length()
+        return Line(topLeft, topRight()).length().toLong() * Line(topRight(), bottomRight).length()
     }
 }
 
@@ -175,7 +175,7 @@ data class Rectangle(val topLeft: Point, val topRight: Point, val bottomLeft: Po
 data class DigAction(val direction: Direction, val steps: Int, val color: String) {
     companion object {
         //U 2 (#7a21e3)
-        fun of(raw: String) : DigAction {
+        fun ofPart1(raw: String) : DigAction {
             return DigAction(
                 direction = when (raw.substringBefore(" ")) {
                     "U" -> Direction.UP
