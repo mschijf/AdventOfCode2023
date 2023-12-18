@@ -3,103 +3,104 @@ package adventofcode2023
 import tool.coordinate.twodimensional.Direction
 import tool.coordinate.twodimensional.Point
 import tool.coordinate.twodimensional.pos
-import tool.coordinate.twodimensional.printAsGrid
 import tool.mylambdas.substringBetween
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.tan
 
 fun main() {
-    Day18(test=true).showResult()
+    Day18(test=false).showResult()
 }
 
 class Day18(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Lavaduct Lagoon", hasInputFile = true) {
 
-    private val digPlan = inputLines.map {DigAction.of(it)}
-    private val digPlanPart2 = inputLines.map {DigAction.ofPart2(it)}
-
     override fun resultPartOne(): Any {
+        val digPlan = inputLines.map {DigAction.of(it)}
         val borderLines = digPlan.digIt()
-        val borderLinesVertical = borderLines.filter {it.isVertical}.toSet()
-        val horLines = borderLines.divideIntoHorizontalLines()
-        val verLines = borderLines.divideIntoVerticalLines()
+        return borderLines.calculateArea()
+    }
+
+    override fun resultPartTwo(): Any {
+        val digPlanPart2 = inputLines.map {DigAction.ofPart2(it)}
+        val borderLines = digPlanPart2.digIt()
+        return borderLines.calculateArea()
+    }
+
+    private fun Set<Line>.calculateArea(): Long {
+        val borderLinesVertical = this.filter {it.isVertical}.toSet()
+        val horLines = this.divideIntoHorizontalLines()
+        val verLines = this.divideIntoVerticalLines()
         val rectangles = makeRectangles(horLines, verLines)
 
         val rectanglesToCount = rectangles
             .filter{ rc -> rc.countLinesToTheRight(borderLinesVertical) % 2 == 1 }
             .sortedBy { 100* it.topLeft.y + it.topLeft.x}
 
-//        println(rectanglesToCount[2].countLinesToTheRight(borderLinesVertical))
-//        println(rectanglesToCount[9].countLinesToTheRight(borderLinesVertical))
-//
         val totalArea = rectanglesToCount.sumOf { rc -> rc.area()}
-        val allLines = rectanglesToCount.flatMap { rc -> rc.toLines()}
-        val allUniqueLines = allLines.distinct()
-
-        val totalLineLength = allLines.sumOf { l -> l.length() }
-        val uniqueLineLength = allUniqueLines.sumOf { l -> l.length() }
-
-        val allEdgePoints = allUniqueLines.flatMap { listOf(it.from,it.to) }
-        val allUniqueEdgePoints = allEdgePoints.distinct()
-
-        return totalArea// - totalLineLength + uniqueLineLength //- allEdgePoints.size + allUniqueEdgePoints.size
-
-
-//        val all = border.floodGrid() + border
-////        all.printAsGrid()
-//        return all.size
+        return totalArea
     }
 
-    override fun resultPartTwo(): Any {
-//        val border = setOf(
-//            Line(pos(0,0), pos(0,2)),
-//            Line(pos(0,2), pos(2,2)),
-//            Line(pos(2,2), pos(2,0)),
-//            Line(pos(2,0), pos(0,0)),
-//        )
-//        return border.area()
-
-        return "todo"
-    }
 
     private fun List<DigAction>.digIt(): Set<Line> {
         val result = mutableSetOf<Line>()
         var current = pos(0,0)
-        this.forEach {action ->
-            val next = current.moveSteps(action.direction, action.steps)
-            result.add(Line(current, next))
-            current = next
-        }
-        return result
-    }
+        var lastCorner = CornerType.D90
+        this.forEachIndexed {index, action ->
 
+            val nextCorner = if (index == this.size-1) {
+                expectedCorner(this[index].direction, this[0].direction)
+            } else {
+                expectedCorner(this[index].direction, this[index + 1].direction)
+            }
 
+            val extra = when (lastCorner) {
+                CornerType.D90 -> when (nextCorner) {
+                    CornerType.D90 -> 1
+                    CornerType.D270 -> 0
+                }
 
-//    private fun between(p1: Point, p2: Point): List<Point> {
-//        if (p1.x  == p2.x) {
-//            return (min(p1.y, p2.y) .. max(p1.y, p2.y)).map{ y -> pos(p1.x, y)}
-//        } else {
-//            return (min(p1.x, p2.x) .. max(p1.x, p2.x)).map{ x -> pos(x, p1.y)}
-//        }
-//    }
-//
-    private fun Set<Point>.floodGrid(): Set<Point> {
-        val result = mutableSetOf<Point>()
-        val startFrom: Point = pos(1,1)
-
-        val queue = ArrayDeque<Point>().apply { this.add(startFrom) }
-
-        while (queue.isNotEmpty()) {
-            val currentPos = queue.removeFirst()
-            currentPos.neighbors().forEach { p ->
-                if (p !in this && p !in result) {
-                    result.add(p)
-                    queue.add(p)
+                CornerType.D270 -> when (nextCorner) {
+                    CornerType.D90 -> 0
+                    CornerType.D270 -> -1
                 }
             }
+
+            val next = current.moveSteps(action.direction, action.steps + extra)
+            result.add(Line(current, next))
+
+            current = next
+            lastCorner = nextCorner
         }
         return result
     }
+
+    enum class CornerType{
+        D90, D270
+    }
+    private fun expectedCorner(dir1: Direction, dir2:Direction): CornerType {
+        return when (dir1) {
+            Direction.RIGHT -> when(dir2) {
+                Direction.UP -> CornerType.D270
+                Direction.DOWN -> CornerType.D90
+                else -> throw Exception("WEEIRD")
+            }
+            Direction.LEFT -> when(dir2) {
+                Direction.UP -> CornerType.D90
+                Direction.DOWN -> CornerType.D270
+                else -> throw Exception("WEEIRD")
+            }
+            Direction.UP -> when(dir2) {
+                Direction.LEFT -> CornerType.D270
+                Direction.RIGHT -> CornerType.D90
+                else -> throw Exception("WEEIRD")
+            }
+            Direction.DOWN -> when(dir2) {
+                Direction.LEFT -> CornerType.D90
+                Direction.RIGHT -> CornerType.D270
+                else -> throw Exception("WEEIRD")
+            }
+        }
+    }
+
 }
 
 
@@ -139,7 +140,7 @@ private fun makeRectangles(horizontalLines: List<Line>, verticalLines: List<Line
 }
 
 private fun Rectangle.countLinesToTheRight(verticaLineSet: Set<Line>): Int {
-    val xValue = this.topLeft.x
+    val xValue = this.topLeft.x + 0.5
     val yValue = this.topLeft.y + this.topLeft.distanceTo(this.bottomLeft)*1.0 / 2.0
     return verticaLineSet
         .count{vl ->
@@ -152,7 +153,7 @@ private fun Rectangle.countLinesToTheRight(verticaLineSet: Set<Line>): Int {
 data class Line(val from: Point, val to: Point) {
     val isHorizontal = from.y == to.y
     val isVertical = from.x == to.x
-    fun length() = from.distanceTo(to)+1
+    fun length() = from.distanceTo(to)
 }
 
 data class Rectangle(val topLeft: Point, val topRight: Point, val bottomLeft: Point, val bottomRight: Point) {
@@ -205,18 +206,3 @@ data class DigAction(val direction: Direction, val steps: Int, val color: String
         }
     }
 }
-
-
-/**
- * voor alle hor lines: bepaal begin en eindpunten --> sorteer op x. aantal horlijntjes = aantal punten - 1
- * voor alle ver lines : bepaal begin en eindpunten --> sorteer op y. aantal verlijntjes = aantal punten - 1
- * blokken zijn alle hor en verlijntjes ccombineren :
- *     horlijn 1 met verlijn1. horlijn2 met verlijn 1, ...
- *     horlijn 1 met verlijn2. horlijn2 met verlijn 2, ..
- *     ...
- *
- *     voor ieder blok, pak een punt in het blok en tel het aantal snijnpunten met verticale lijnen groter dan x
- *     als dat oneven is, dan hele blok in de polygon
- */
-
-
