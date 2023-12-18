@@ -11,6 +11,27 @@ fun main() {
     Day18(test=false).showResult()
 }
 
+/**
+ * Twee 'slimme' stappen nodig voor deel 2. Deel 1 is evt brute force op te lossen.
+ **
+ * Slimme stap 1:
+ * Ik trek een lijn om de gegraven gaten heen. als je dit zo doet, dan hebben straks alle rechthoeken (zie slimme stap 2)
+ * hun eigen gaten en is er geen overlap van gaten. Dit telt makkelijker bij elkaar op.
+ * Dit lijntje trekken is een lastige, maar wordt in 'digIt' gedaan. In principe wordt er per lijn gekeken of je 'buitenom'
+ *    (polygon deel is nog 'concaaf')moet of 'binnendoor' (polygondeel is 'convex')
+ * Ik maak hier wel de aanname dat de volgorde van gaten 'clockwise' gedaan worden en dat we weer bij het begin aankomen.
+ *
+ * Slimme stap 2:
+ * Je gaat een polygon maken met alleen maar rechte hoeken. De polygoin wordt gerpresenteedr door 'borderLines' een lst van lijnen.
+ * is in rechthoeken op te delen. Dit doet de method: makeRectangles. Dit bevat echter ook rectangles die buiten het polygon vallen.
+ * Alle rechthoeken bij elkaar vormen samen één groot rechthoek, waar depolygon precies inpast.
+ * Per rechthoek kan je onderzoeken of het tot de polygon behoort,
+ *     door het aantal verticale lijnen (van de oorspronkelijke polygon) rechts van een veld in de rechthoek te tellen
+ *     als het aantal zijdes oneven is, dan hoort het bij de polygon
+ * Vervolgens de oppervlakte per polygon berekenen en die bij elkaar op te tellen.
+ *
+ */
+
 class Day18(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Lavaduct Lagoon", hasInputFile = true) {
 
     override fun resultPartOne(): Any {
@@ -33,7 +54,6 @@ class Day18(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Lavaduct Lag
 
         val rectanglesToCount = rectangles
             .filter{ rc -> rc.countLinesToTheRight(borderLinesVertical) % 2 == 1 }
-            .sortedBy { 100* it.topLeft.y + it.topLeft.x}
 
         val totalArea = rectanglesToCount.sumOf { rc -> rc.area()}
         return totalArea
@@ -42,8 +62,8 @@ class Day18(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Lavaduct Lag
 
     private fun List<DigAction>.digIt(): List<Line> {
         val result = mutableListOf<Line>()
-        var current = pos(0,0)
-        var lastCorner = CornerType.D90
+        var currentPos = pos(0,0)
+        var lastCorner = expectedCorner(this.last().direction, this[0].direction)
         this.forEachIndexed {index, action ->
 
             val nextCorner = if (index == this.size-1) {
@@ -64,10 +84,10 @@ class Day18(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Lavaduct Lag
                 }
             }
 
-            val next = current.moveSteps(action.direction, action.steps + extra)
-            result.add(Line(current, next))
+            val nextPos = currentPos.moveSteps(action.direction, action.steps + extra)
+            result.add(Line(currentPos, nextPos))
 
-            current = next
+            currentPos = nextPos
             lastCorner = nextCorner
         }
         return result
@@ -154,15 +174,6 @@ data class Line(val from: Point, val to: Point) {
 }
 
 data class Rectangle(val topLeft: Point, val bottomRight: Point) {
-    fun toLines() : List<Line> {
-        return listOf(
-            Line(topLeft, topRight()),
-            Line(topRight(), bottomRight),
-            Line(bottomLeft(), bottomRight),
-            Line(topLeft, bottomLeft()),
-        )
-    }
-
     fun topRight(): Point = pos(bottomRight.x, topLeft.y)
     fun bottomLeft(): Point = pos(topLeft.x, bottomRight.y)
 
