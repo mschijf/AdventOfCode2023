@@ -34,11 +34,7 @@ class Day19(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
     }
 
     private fun Map<String, IntRange>.product(): Long {
-        var p = 1L
-        this.values.forEach { range ->
-            p *= (range.last - range.first + 1)
-        }
-        return p
+        return this.values.fold(1L){acc, range -> acc * (range.last - range.first + 1) }
     }
 
     private fun allCombinations(name: String, rangeMap: Map<String, IntRange>): Long {
@@ -52,22 +48,25 @@ class Day19(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
         val workFlow = workflowList.first { it.name == name }
         var sum = 0L
         val falseRangeMap = rangeMap.toMutableMap()
-        for (i in 0.. workFlow.ruleSet.size - 2) {
-            val rule = workFlow.ruleSet[i]
+        workFlow.ruleSet.forEach { rule->
             val trueRangeMap = falseRangeMap.toMutableMap()
-            if (rule.compareType == CompareType.SMALLER) {
-                trueRangeMap[rule.part!!] = trueRangeMap[rule.part]!!.first ..  min(trueRangeMap[rule.part]!!.last, rule.conditionNumber!!-1)
-                falseRangeMap[rule.part!!] =  max(falseRangeMap[rule.part]!!.first, rule.conditionNumber) .. falseRangeMap[rule.part!!]!!.last
-            } else if (rule.compareType == CompareType.BIGGER) {
-                trueRangeMap[rule.part!!] = max(trueRangeMap[rule.part]!!.first, rule.conditionNumber!!+1) .. trueRangeMap[rule.part]!!.last
-                falseRangeMap[rule.part!!] = falseRangeMap[rule.part!!]!!.first .. min(falseRangeMap[rule.part]!!.last, rule.conditionNumber)
-            } else {
-                throw Exception("ASKLASKLAKSLA")
+            when (rule.compareType) {
+                CompareType.SMALLER -> {
+                    trueRangeMap[rule.part!!] = trueRangeMap[rule.part]!!.first ..  min(trueRangeMap[rule.part]!!.last, rule.conditionNumber!!-1)
+                    falseRangeMap[rule.part] =  max(falseRangeMap[rule.part]!!.first, rule.conditionNumber) .. falseRangeMap[rule.part]!!.last
+                    sum += allCombinations(rule.result, trueRangeMap)
+                }
+                CompareType.BIGGER -> {
+                    trueRangeMap[rule.part!!] = max(trueRangeMap[rule.part]!!.first, rule.conditionNumber!! + 1)..trueRangeMap[rule.part]!!.last
+                    falseRangeMap[rule.part] = falseRangeMap[rule.part]!!.first..min(falseRangeMap[rule.part]!!.last, rule.conditionNumber)
+                    sum += allCombinations(rule.result, trueRangeMap)
+                }
+                CompareType.NONE -> {
+                    sum += allCombinations(rule.result, falseRangeMap)
+                }
             }
-            sum += allCombinations(rule.result, trueRangeMap)
         }
-        val rule = workFlow.ruleSet.last()
-        return sum + allCombinations(rule.result, falseRangeMap)
+        return sum
     }
 
 
@@ -107,22 +106,6 @@ data class Workflow(val name: String, val ruleSet: List<Rule> ) {
         }
         throw Exception("none of the rules in ruleset is matching")
     }
-
-    fun getResultForRanges(partRanges: Map<String, IntRange>) {
-        val result = mutableListOf<Pair<String,Map<String, IntRange>>>()
-        ruleSet.forEach {rule ->
-            when(rule.compareType) {
-                CompareType.BIGGER -> {
-                    rule.conditionNumber!!
-                }
-                CompareType.SMALLER -> {
-
-                }
-                else -> {}
-            }
-        }
-    }
-
 }
 
 enum class CompareType {BIGGER, SMALLER, NONE}
