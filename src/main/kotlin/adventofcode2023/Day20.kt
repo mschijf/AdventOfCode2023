@@ -9,20 +9,26 @@ fun main() {
 
 class Day20(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInputFile = true) {
 
-    override fun resultPartOne(): Any {
+    private fun makeModuleList(): Map<String, Module> {
         val moduleList1 = inputLines.map { Module.of(it) }.associateBy { it.name }
         val unknown = moduleList1.values.flatMap{it.sendTo}.filter{it !in moduleList1}
         val moduleList = moduleList1 + unknown.map{it to UnknownModule(it)}
         moduleList.values.forEach { module ->
             module.initSendToModuleList(module.sendTo.map { moduleList[it]!! })
         }
-        moduleList.forEach { name, module ->
+        moduleList.forEach { (name, module) ->
             module.initReceiveFromModuleList(moduleList.values.filter { it.sendTo.contains(name) })
         }
+        return moduleList
+    }
+
+    override fun resultPartOne(): Any {
+        val moduleList = makeModuleList()
+
         var ch = 0L
         var cl = 0L
         repeat(1000) {
-            val (cnl, cnh) = moduleList.pushButton()
+            val (cnl, cnh) = moduleList.pushButtonOnce()
             ch += cnh
             cl += cnl
         }
@@ -30,7 +36,7 @@ class Day20(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
         return ch*cl
     }
 
-    fun Map<String, Module>.pushButton(): Pair<Long, Long> {
+    private fun Map<String, Module>.pushButtonOnce(): Pair<Long, Long> {
         var countLow = 1L
         var countHigh = 0L
         val queue = ArrayDeque<Message>()
@@ -43,23 +49,30 @@ class Day20(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
             else
                 countHigh++
 
-            val all = message.to.receive(message.from, message.pulse)
-            queue.addAll(all)
+            val allMessages = message.to.receive(message.from, message.pulse)
+            queue.addAll(allMessages)
         }
         return Pair(countLow, countHigh)
     }
 
     override fun resultPartTwo(): Any {
-        val moduleList1 = inputLines.map { Module.of(it) }.associateBy { it.name }
-        val unknown = moduleList1.values.flatMap{it.sendTo}.filter{it !in moduleList1}
-        val moduleList = moduleList1 + unknown.map{it to UnknownModule(it)}
-        moduleList.values.forEach { module ->
-            module.initSendToModuleList(module.sendTo.map { moduleList[it]!! })
-        }
-        moduleList.forEach { name, module ->
-            module.initReceiveFromModuleList(moduleList.values.filter { it.sendTo.contains(name) })
-        }
-        val broadCaster = moduleList["broadcaster"]!!
+        val moduleList = makeModuleList()
+        return moduleList.pushButtonTill()
+    }
+
+    /**
+     * ga op zoek naar de voorlopers van module-rx. Dat is er eentje jz. Dit is een conjunction
+     * jz stuurt een 0, als "... if it remembers high pulses for all inputs, it sends a low pulse", dus alle inputs van
+     * jz moeten een HIGH sturen. (alle inputs zijn: dh, mk, vf en rn)
+     *
+     * maak nu een 'pushButton' loop en kijk in de loop of je één van de vier inputs tegen komt die van plan is een HIGH te sturem
+     * zo ja, sla dan op hoeveel pushButton rondje je daarvoor nodig had.
+     *
+     * Zodra alle vier een getal hebben (en dus een keer zijn geraakt), weet je wat de totale cycle time is door het product te nemen
+     * van deze vier cycleCounts (voor de zekerheid een lcm gedaan)
+     */
+    private fun Map<String, Module>.pushButtonTill(): Long {
+        val broadCaster = this["broadcaster"]!!
         val dummy = UnknownModule("dummy")
 
         var i = 0L
@@ -71,35 +84,31 @@ class Day20(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
             queue.addAll(all)
             while (queue.isNotEmpty()) {
                 val message = queue.removeFirst()
-                if (message.pulse == PulseType.LOW && message.to.name in monitored) {
-                    monitored[message.to.name] = i
+                if (message.pulse == PulseType.HIGH && message.from.name in monitored) {
+                    monitored[message.from.name] = i
                 }
-                val all = message.to.receive(message.from, message.pulse)
-                queue.addAll(all)
+                val allMessages = message.to.receive(message.from, message.pulse)
+                queue.addAll(allMessages)
             }
 
         }
+        println(monitored.values.reduce { acc, l ->  acc*l})
 
         return monitored.values.reduce { acc, l ->  lcm(acc, l)}
-
     }
-
 }
 
 //======================================================================================================================
 
 enum class PulseType { HIGH, LOW}
 
-class Ruler{
-}
-
 abstract class Module(val name: String, val sendTo: List<String>) {
     companion object {
         fun of(raw: String): Module {
-            when (raw.first()) {
-                '%' -> return FlipFlop.of(raw)
-                '&' -> return Conjunction.of(raw)
-                'b' -> return Broadcaster.of(raw)
+            return when (raw.first()) {
+                '%' -> FlipFlop.of(raw)
+                '&' -> Conjunction.of(raw)
+                'b' -> Broadcaster.of(raw)
                 else -> throw Exception("Unexpected input")
             }
         }
@@ -110,7 +119,7 @@ abstract class Module(val name: String, val sendTo: List<String>) {
         sendToModuleList = aList
     }
 
-    protected var receiveFromModuleList: List<Module> = emptyList()
+    var receiveFromModuleList: List<Module> = emptyList()
     fun initReceiveFromModuleList(aList : List<Module>) {
         receiveFromModuleList = aList
     }
@@ -159,10 +168,10 @@ class FlipFlop(name: String, sendTo: List<String>): Module(name, sendTo) {
     override fun receive(from: Module, pulse: PulseType): List<Message> {
         if (pulse == PulseType.LOW) {
             isOn = !isOn
-            if (isOn) {
-                return sendToModuleList.map { Message(this, it, PulseType.HIGH) }
+            return if (isOn) {
+                sendToModuleList.map { Message(this, it, PulseType.HIGH) }
             } else {
-                return sendToModuleList.map { Message(this, it, PulseType.LOW) }
+                sendToModuleList.map { Message(this, it, PulseType.LOW) }
             }
         }
         return emptyList()
@@ -187,10 +196,10 @@ class Conjunction(name: String, sendTo: List<String>): Module(name, sendTo) {
     private val remember = mutableMapOf<Module, PulseType>()
     override fun receive(from: Module, pulse: PulseType): List<Message> {
         remember[from] = pulse
-        if (receiveFromModuleList.all{module -> remember.getOrDefault(module, PulseType.LOW) == PulseType.HIGH}) {
-            return sendToModuleList.map { Message(this, it, PulseType.LOW) }
+        return if (receiveFromModuleList.all{ module -> remember.getOrDefault(module, PulseType.LOW) == PulseType.HIGH}) {
+            sendToModuleList.map { Message(this, it, PulseType.LOW) }
         } else {
-            return sendToModuleList.map { Message(this, it, PulseType.HIGH) }
+            sendToModuleList.map { Message(this, it, PulseType.HIGH) }
         }
     }
 
@@ -200,8 +209,7 @@ class Conjunction(name: String, sendTo: List<String>): Module(name, sendTo) {
 
 }
 
-class UnknownModule(name: String): Module(name, emptyList<String>()) {
-    var receivedLowPulse = false
+class UnknownModule(name: String): Module(name, emptyList()) {
     override fun receive(from: Module, pulse: PulseType): List<Message> {
         return emptyList()
     }
