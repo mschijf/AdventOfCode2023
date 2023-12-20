@@ -3,25 +3,50 @@ package adventofcode2023
 import tool.mylambdas.substringBetween
 
 fun main() {
-    Day20(test=true).showResult()
+    Day20(test=false).showResult()
 }
 
 class Day20(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInputFile = true) {
 
     override fun resultPartOne(): Any {
         val ruler = Ruler()
-        val moduleList = inputLines.map{Module.of(it, ruler)}.associateBy { it.name }
+        val moduleList1 = inputLines.map { Module.of(it, ruler) }.associateBy { it.name }
+        val unknown = moduleList1.values.flatMap{it.sendTo}.filter{it !in moduleList1}
+        val moduleList = moduleList1 + unknown.map{it to UnknownModule(it)}
         moduleList.values.forEach { module ->
             module.initSendToModuleList(module.sendTo.map { moduleList[it]!! })
         }
         moduleList.forEach { name, module ->
             module.initReceiveFromModuleList(moduleList.values.filter { it.sendTo.contains(name) })
         }
-        val button = Button(ruler)
-        button.initSendToModuleList(listOf(moduleList["broadcaster"]!!))
-        button.push()
+        var ch = 0L
+        var cl = 0L
+        repeat(1000) {
+            val (cnl, cnh) = moduleList.pushButton()
+            ch += cnh
+            cl += cnl
+        }
 
-        return moduleList.values
+        return ch*cl
+    }
+
+    fun Map<String, Module>.pushButton(): Pair<Long, Long> {
+        var countLow = 1L
+        var countHigh = 0L
+        val queue = ArrayDeque<Message>()
+        val all = this["broadcaster"]!!.receive(this["broadcaster"]!!, PulseType.LOW)
+        queue.addAll(all)
+        while (queue.isNotEmpty()) {
+            val message = queue.removeFirst()
+            if (message.pulse == PulseType.LOW)
+                countLow++
+            else
+                countHigh++
+
+            val all = message.to.receive(message.from, message.pulse)
+            queue.addAll(all)
+        }
+        return Pair(countLow, countHigh)
     }
 
     override fun resultPartTwo(): Any {
@@ -34,8 +59,6 @@ class Day20(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
 enum class PulseType { HIGH, LOW}
 
 class Ruler{
-    val queue = ArrayDeque<Module>()
-
 }
 
 abstract class Module(val name: String, val sendTo: List<String>, val ruler: Ruler) {
@@ -61,10 +84,11 @@ abstract class Module(val name: String, val sendTo: List<String>, val ruler: Rul
     }
 
     override fun toString(): String {
-        return "$name -> ${receiveFromModuleList.joinToString(", "){it.name}}"
+        return "$name(${type()}) -> ${sendToModuleList.joinToString(", "){it.name}}"
     }
 
-    abstract fun receive(from: Module, pulse: PulseType)
+    abstract fun receive(from: Module, pulse: PulseType): List<Message>
+    abstract fun type(): String
 }
 
 class Broadcaster(name: String, sendTo: List<String>, ruler:Ruler): Module(name, sendTo, ruler) {
@@ -79,18 +103,21 @@ class Broadcaster(name: String, sendTo: List<String>, ruler:Ruler): Module(name,
         }
     }
 
-    override fun receive(from: Module, pulse: PulseType) {
-        sendToModuleList.forEach { it.receive(this, pulse) }
+    override fun receive(from: Module, pulse: PulseType): List<Message> {
+        return sendToModuleList.map { Message(this, it, pulse) }
     }
 
+    override fun type(): String {
+        return "BC"
+    }
 
 }
 
 class FlipFlop(name: String, sendTo: List<String>, ruler: Ruler): Module(name, sendTo, ruler) {
     companion object {
         //broadcaster -> a, b, c
-        fun of(raw: String, ruler: Ruler): Broadcaster {
-            return Broadcaster(
+        fun of(raw: String, ruler: Ruler): FlipFlop {
+            return FlipFlop(
                 name = raw.substringBetween("%", " ->"),
                 sendTo = raw.substringAfter("-> ").split(",").map{it.trim()},
                 ruler = ruler
@@ -99,25 +126,28 @@ class FlipFlop(name: String, sendTo: List<String>, ruler: Ruler): Module(name, s
     }
 
     private var isOn : Boolean = false
-    override fun receive(from: Module, pulse: PulseType) {
+    override fun receive(from: Module, pulse: PulseType): List<Message> {
         if (pulse == PulseType.LOW) {
             isOn = !isOn
             if (isOn) {
-                sendToModuleList.forEach { it.receive(this, PulseType.HIGH) }
+                return sendToModuleList.map { Message(this, it, PulseType.HIGH) }
             } else {
-                sendToModuleList.forEach { it.receive(this, PulseType.LOW) }
+                return sendToModuleList.map { Message(this, it, PulseType.LOW) }
             }
         }
+        return emptyList()
     }
 
-
+    override fun type(): String {
+        return "FF"
+    }
 }
 
 class Conjunction(name: String, sendTo: List<String>, ruler: Ruler): Module(name, sendTo, ruler) {
     companion object {
         //broadcaster -> a, b, c
-        fun of(raw: String, ruler: Ruler): Broadcaster {
-            return Broadcaster(
+        fun of(raw: String, ruler: Ruler): Conjunction {
+            return Conjunction (
                 name = raw.substringBetween("&", " ->"),
                 sendTo = raw.substringAfter("-> ").split(",").map{it.trim()},
                 ruler = ruler
@@ -126,24 +156,35 @@ class Conjunction(name: String, sendTo: List<String>, ruler: Ruler): Module(name
     }
 
     private val remember = mutableMapOf<Module, PulseType>()
-    override fun receive(from: Module, pulse: PulseType) {
+    override fun receive(from: Module, pulse: PulseType): List<Message> {
         remember[from] = pulse
         if (receiveFromModuleList.all{module -> remember.getOrDefault(module, PulseType.LOW) == PulseType.HIGH}) {
-            sendToModuleList.forEach { it.receive(this, PulseType.LOW) }
+            return sendToModuleList.map { Message(this, it, PulseType.LOW) }
         } else {
-            sendToModuleList.forEach { it.receive(this, PulseType.HIGH) }
+            return sendToModuleList.map { Message(this, it, PulseType.HIGH) }
         }
     }
+
+    override fun type(): String {
+        return "CJ"
+    }
+
 }
 
-class Button(ruler: Ruler): Module("Button", listOf("broadcaster"), ruler) {
-    override fun receive(from: Module, pulse: PulseType) {
-        //do nothing
-        throw Exception ("Button cannot receive anything")
+class UnknownModule(name: String): Module(name, emptyList<String>(), Ruler()) {
+    override fun receive(from: Module, pulse: PulseType): List<Message> {
+        return emptyList()
     }
 
-    fun push() {
-        sendToModuleList.first().receive(this, PulseType.LOW)
+    override fun type(): String {
+        return "UN"
     }
 
+}
+
+
+data class Message(val from: Module, val to:Module, val pulse: PulseType) {
+    override fun toString(): String {
+        return "${from.name} (${from.type()}} -- $pulse --> ${to.name} (${to.type()}}"
+    }
 }
