@@ -1,5 +1,6 @@
 package adventofcode2023
 
+import com.tool.math.lcm
 import tool.mylambdas.substringBetween
 
 fun main() {
@@ -9,8 +10,7 @@ fun main() {
 class Day20(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInputFile = true) {
 
     override fun resultPartOne(): Any {
-        val ruler = Ruler()
-        val moduleList1 = inputLines.map { Module.of(it, ruler) }.associateBy { it.name }
+        val moduleList1 = inputLines.map { Module.of(it) }.associateBy { it.name }
         val unknown = moduleList1.values.flatMap{it.sendTo}.filter{it !in moduleList1}
         val moduleList = moduleList1 + unknown.map{it to UnknownModule(it)}
         moduleList.values.forEach { module ->
@@ -50,8 +50,40 @@ class Day20(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
     }
 
     override fun resultPartTwo(): Any {
-        return "TODO"
+        val moduleList1 = inputLines.map { Module.of(it) }.associateBy { it.name }
+        val unknown = moduleList1.values.flatMap{it.sendTo}.filter{it !in moduleList1}
+        val moduleList = moduleList1 + unknown.map{it to UnknownModule(it)}
+        moduleList.values.forEach { module ->
+            module.initSendToModuleList(module.sendTo.map { moduleList[it]!! })
+        }
+        moduleList.forEach { name, module ->
+            module.initReceiveFromModuleList(moduleList.values.filter { it.sendTo.contains(name) })
+        }
+        val broadCaster = moduleList["broadcaster"]!!
+        val dummy = UnknownModule("dummy")
+
+        var i = 0L
+        val monitored = mutableMapOf("dh" to 0L, "mk" to 0L, "vf" to 0L, "rn" to 0L)
+        while (monitored.values.any { it == 0L } ) {
+            i++
+            val queue = ArrayDeque<Message>()
+            val all = broadCaster.receive(dummy, PulseType.LOW)
+            queue.addAll(all)
+            while (queue.isNotEmpty()) {
+                val message = queue.removeFirst()
+                if (message.pulse == PulseType.LOW && message.to.name in monitored) {
+                    monitored[message.to.name] = i
+                }
+                val all = message.to.receive(message.from, message.pulse)
+                queue.addAll(all)
+            }
+
+        }
+
+        return monitored.values.reduce { acc, l ->  lcm(acc, l)}
+
     }
+
 }
 
 //======================================================================================================================
@@ -61,13 +93,13 @@ enum class PulseType { HIGH, LOW}
 class Ruler{
 }
 
-abstract class Module(val name: String, val sendTo: List<String>, val ruler: Ruler) {
+abstract class Module(val name: String, val sendTo: List<String>) {
     companion object {
-        fun of(raw: String, ruler: Ruler): Module {
+        fun of(raw: String): Module {
             when (raw.first()) {
-                '%' -> return FlipFlop.of(raw, ruler)
-                '&' -> return Conjunction.of(raw, ruler)
-                'b' -> return Broadcaster.of(raw, ruler)
+                '%' -> return FlipFlop.of(raw)
+                '&' -> return Conjunction.of(raw)
+                'b' -> return Broadcaster.of(raw)
                 else -> throw Exception("Unexpected input")
             }
         }
@@ -91,14 +123,13 @@ abstract class Module(val name: String, val sendTo: List<String>, val ruler: Rul
     abstract fun type(): String
 }
 
-class Broadcaster(name: String, sendTo: List<String>, ruler:Ruler): Module(name, sendTo, ruler) {
+class Broadcaster(name: String, sendTo: List<String>): Module(name, sendTo) {
     companion object {
         //broadcaster -> a, b, c
-        fun of(raw: String, ruler: Ruler): Broadcaster {
+        fun of(raw: String): Broadcaster {
             return Broadcaster(
                 name = raw.substringBefore(" ->"),
                 sendTo = raw.substringAfter("-> ").split(",").map{it.trim()},
-                ruler = ruler
             )
         }
     }
@@ -113,14 +144,13 @@ class Broadcaster(name: String, sendTo: List<String>, ruler:Ruler): Module(name,
 
 }
 
-class FlipFlop(name: String, sendTo: List<String>, ruler: Ruler): Module(name, sendTo, ruler) {
+class FlipFlop(name: String, sendTo: List<String>): Module(name, sendTo) {
     companion object {
         //broadcaster -> a, b, c
-        fun of(raw: String, ruler: Ruler): FlipFlop {
+        fun of(raw: String): FlipFlop {
             return FlipFlop(
                 name = raw.substringBetween("%", " ->"),
                 sendTo = raw.substringAfter("-> ").split(",").map{it.trim()},
-                ruler = ruler
             )
         }
     }
@@ -143,14 +173,13 @@ class FlipFlop(name: String, sendTo: List<String>, ruler: Ruler): Module(name, s
     }
 }
 
-class Conjunction(name: String, sendTo: List<String>, ruler: Ruler): Module(name, sendTo, ruler) {
+class Conjunction(name: String, sendTo: List<String>): Module(name, sendTo) {
     companion object {
         //broadcaster -> a, b, c
-        fun of(raw: String, ruler: Ruler): Conjunction {
+        fun of(raw: String): Conjunction {
             return Conjunction (
                 name = raw.substringBetween("&", " ->"),
                 sendTo = raw.substringAfter("-> ").split(",").map{it.trim()},
-                ruler = ruler
             )
         }
     }
@@ -171,7 +200,8 @@ class Conjunction(name: String, sendTo: List<String>, ruler: Ruler): Module(name
 
 }
 
-class UnknownModule(name: String): Module(name, emptyList<String>(), Ruler()) {
+class UnknownModule(name: String): Module(name, emptyList<String>()) {
+    var receivedLowPulse = false
     override fun receive(from: Module, pulse: PulseType): List<Message> {
         return emptyList()
     }
