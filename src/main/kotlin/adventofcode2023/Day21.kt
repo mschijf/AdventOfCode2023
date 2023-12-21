@@ -21,7 +21,7 @@ class Day21(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
     }
 
     override fun resultPartTwo(): Any {
-        return doStepsPart2(if (test) 500  else 26_501_365)
+        return doStepsPart2(if (test) 5000  else 26_501_365)
     }
 
     private fun doSteps(maxSteps: Int): Int {
@@ -33,9 +33,12 @@ class Day21(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
         return visited.size
     }
 
-    private fun doStepsPart2(maxSteps: Int): Int {
+    private fun doStepsPart2(maxSteps: Int): Long {
         var visited = setOf<Point>(start)
-
+        var prevSet0 = emptySet<Point>()
+        var prevSet1 = emptySet<Point>()
+        var aantal0 = 0L
+        var aantal1 = 1L
         repeat(maxSteps) {
             val result = mutableSetOf<Point>()
             visited.forEach { pos ->
@@ -46,11 +49,27 @@ class Day21(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
                     }
                 }
             }
-            visited = result
-        }
-        return visited.size
-    }
 
+            if (it % 1000 == 0)  {
+                println("$it: $aantal0  $aantal1   ${result.size}")
+            }
+            if (it % 2 == 0) {
+                prevSet0 = visited
+                visited = result - prevSet1
+                aantal0 += visited.size.toLong()
+            } else {
+                prevSet1 = visited
+                visited = result - prevSet0
+                aantal1 += visited.size.toLong()
+            }
+        }
+        if (maxSteps % 2 == 0 ) {
+            return (aantal1)
+        } else {
+            return (aantal0)
+        }
+    }
+    //167004
 
 //    private fun stespNecessay(): Int {
 //        var a = 1L
