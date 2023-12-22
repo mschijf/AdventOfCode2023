@@ -1,8 +1,6 @@
 package adventofcode2023
 
-import tool.coordinate.twodimensional.Direction
-import tool.coordinate.twodimensional.Point
-import tool.coordinate.twodimensional.pos
+import tool.coordinate.twodimensional.*
 import tool.mylambdas.substringBetween
 import kotlin.math.max
 import kotlin.math.min
@@ -155,8 +153,8 @@ class Day18(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Lavaduct Lag
     }
 
     private fun Rectangle.countLinesToTheRight(verticaLineSet: Set<Line>): Int {
-        val xValue = this.topLeft.x + 0.5
-        val yValue = this.topLeft.y + this.topLeft.distanceTo(this.bottomLeft())*1.0 / 2.0
+        val xValue = this.topLeft().x + 0.5
+        val yValue = this.topLeft().y + this.topLeft().distanceTo(this.bottomLeft())*1.0 / 2.0
         return verticaLineSet
             .count{vl ->
                 vl.from.x > xValue  &&
@@ -165,23 +163,6 @@ class Day18(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="Lavaduct Lag
             }
     }
 }
-
-
-data class Line(val from: Point, val to: Point) {
-    val isHorizontal = from.y == to.y
-    val isVertical = from.x == to.x
-    fun length() = from.distanceTo(to)
-}
-
-data class Rectangle(val topLeft: Point, val bottomRight: Point) {
-    fun topRight(): Point = pos(bottomRight.x, topLeft.y)
-    fun bottomLeft(): Point = pos(topLeft.x, bottomRight.y)
-
-    fun area() : Long {
-        return Line(topLeft, topRight()).length().toLong() * Line(topRight(), bottomRight).length()
-    }
-}
-
 
 data class DigAction(val direction: Direction, val steps: Int, val color: String) {
     companion object {
