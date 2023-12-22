@@ -1,10 +1,8 @@
 package adventofcode2023
 
 import tool.coordinate.threedimensional.Point3D
-import tool.coordinate.twodimensional.Point
+import tool.coordinate.twodimensional.Rectangle
 import tool.coordinate.twodimensional.pos
-import kotlin.math.max
-import kotlin.math.min
 
 fun main() {
     Day22(test=false).showResult()
@@ -42,7 +40,6 @@ class Day22(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
 
     override fun resultPartTwo(): Any {
         return brickList.sumOf{countRemovals(it)}
-//        return (countRemovals(brickList[1]))
     }
 
     private fun countRemovals(brick: Brick): Int {
@@ -94,7 +91,7 @@ class Day22(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
                         nothingHappened = false
 
                         overlappedWith.forEach { overlapper -> supportMap[overlapper]!!.add(aBrick) }
-                        break;
+                        break
                     }
                 }
             }
@@ -139,33 +136,14 @@ class Day22(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
 
 }
 
-fun IntRange.overlaps(other:IntRange): Boolean {
-    return (this.first in other || this.last in other || other.first in this || other.last in this)
-}
-
-data class Rectangle(val p1: Point, val p2: Point) {
-    val minX = min(p1.x, p2.x)
-    val maxX = max(p1.x, p2.x)
-    val minY = min(p1.y, p2.y)
-    val maxY = max(p1.y, p2.y)
-
-    fun overlaps(other: Rectangle): Boolean {
-        val i1 = (minX..maxX).overlaps(other.minX..other.maxX)
-        val i2 = (minY..maxY).overlaps(other.minY..other.maxY)
-        return i1 && i2
+fun Rectangle.overlaps(rectList: List<Brick>): List<Brick> {
+    val result = mutableListOf<Brick>()
+    rectList.forEach { other->
+        if (this.overlaps(other.rectangle))
+            result.add(other)
     }
-
-    fun overlaps(rectList: List<Brick>): List<Brick> {
-        val result = mutableListOf<Brick>()
-        rectList.forEach { other->
-            if (this.overlaps(other.rectangle))
-                result.add(other)
-        }
-        return result
-    }
-
+    return result
 }
-
 
 data class Brick(val name: String, val p1: Point3D, val p2: Point3D) {
     val rectangle = Rectangle(pos(p1.x, p1.y), pos(p2.x, p2.y) )
