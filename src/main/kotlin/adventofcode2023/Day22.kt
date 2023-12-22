@@ -12,6 +12,18 @@ fun main() {
 
 //95059 --> goede antwoord
 
+/**
+ * lastige opgave, had vast makkelijker gekund. Code is waarschijnlijk niet al te makkelijk leesbaar.
+ * Moet nog veel gerefactored worden. Kost ook zo'n 5 seconden om te runnen.
+ *
+ * korte uitleg: brick Class (een balk)
+ * heightMap: per hoogte houden we bij wat de rechthoek is van de bovenkant van brick (waarop anderen kunnen steunen)
+ * supportMap is een map waarin per brick een lijst is opgenomen met de bricks die het ondersteunt)
+ * supporteByMap is precies andersom: per brick een lijst van bricks waarop het leunt
+ *
+ * hopelijk is de rest van de code duidelijk, want ik heb ven geen zin om eer comments toe te voegen
+ */
+
 class Day22(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInputFile = true) {
 
     private val brickList = inputLines.mapIndexed{index, s ->  Brick.of(index, s)}
