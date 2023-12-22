@@ -41,8 +41,40 @@ class Day22(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
     }
 
     override fun resultPartTwo(): Any {
-        return brickList.sumOf { brick -> countFallingBricks(brick).size }
+        return brickList.sumOf{countRemovals(it)}
+//        return (countRemovals(brickList[1]))
     }
+
+    private fun countRemovals(brick: Brick): Int {
+        var succ = determineSuccessors(brick)
+        var newSucc = succ.filter{rc -> (supportedByMap[rc]!!-succ).isEmpty()}.toSet() + brick
+        while (succ.size != newSucc.size) {
+            succ = newSucc
+            newSucc = succ.filter{rc -> (supportedByMap[rc]!!-succ).isEmpty()}.toSet() + brick
+        }
+
+        var c = 0
+        (succ-brick).forEach {rc ->
+            if ((supportedByMap[rc]!! - succ).isEmpty()) {
+                c++
+            }
+        }
+        return c
+    }
+
+
+
+    private fun determineSuccessors(brick: Brick): Set<Brick> {
+
+        val result = mutableSetOf<Brick>()
+        supportMap[brick]!!.forEach {
+            result.addAll(determineSuccessors(it))
+        }
+        return result + brick
+
+    }
+
+
 
     private fun List<Brick>.fallDown(): Pair<Map<Int, MutableList<Brick>>, Map<Brick, MutableList<Brick>>>  {
         val heightMap = mutableMapOf<Int, MutableList<Brick>>()
@@ -102,28 +134,6 @@ class Day22(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
         }
         return false
     }
-
-    private fun countFallingBricks(removedBrick: Brick, bricksFalling: Set<Brick> = emptySet()): Set<Brick> {
-        if ((supportMap[removedBrick]!!).isEmpty()) {
-            return emptySet()
-        }
-
-        val levelBrickList = heightMap.filterValues { it.contains(removedBrick) }.values.first().toSet()
-
-        val union = mutableSetOf<Brick>()
-        (levelBrickList-removedBrick-bricksFalling).forEach {
-            union += supportMap[it]!!.toSet()
-        }
-        val willFall = supportMap[removedBrick]!! - union
-
-        val result = mutableSetOf<Brick>()
-        result.addAll(willFall)
-        willFall.forEach { fallBrick ->
-            result.addAll(countFallingBricks(fallBrick, bricksFalling+willFall))
-        }
-        return result
-    }
-
 
 
 
