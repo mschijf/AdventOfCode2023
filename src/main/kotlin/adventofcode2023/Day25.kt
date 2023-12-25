@@ -19,6 +19,14 @@ class Day25(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
         .mapValues { it.value.map { it.second } }
     private val components = singleConnections.flatMap { setOf(it.first, it.second) }.toSet()
 
+    /**
+     * first find for each node, the minimal distance to all other nodes
+     * determine the nodes with fewest distances to all other nodes (turned out to be a list of six nodes)
+     * determine the connections between those nodes (turned out to be exactly three connections)
+     * remove the connections from all connections and check the number of disconnected groups. (turned out to be two)
+     * Done.
+     */
+
     override fun resultPartOne(): Any {
         val distanceList = components.map{it to distanceToAll(it)}
         val minDistance = distanceList.minOf { it.second }
