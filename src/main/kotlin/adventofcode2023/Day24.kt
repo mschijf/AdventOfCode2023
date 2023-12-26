@@ -1,6 +1,6 @@
 package adventofcode2023
 
-import adventofcode2023.Day24Hulp.Point3DLong
+import tool.coordinate.threedimensional.Point3DLong
 import tool.mylambdas.collectioncombination.filterCombinedItems
 
 fun main() {
