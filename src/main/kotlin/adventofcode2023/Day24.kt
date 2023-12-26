@@ -1,6 +1,6 @@
 package adventofcode2023
 
-import adventofcode2023.Day24Hulp.Point3D
+import adventofcode2023.Day24Hulp.Point3DLong
 import tool.mylambdas.collectioncombination.filterCombinedItems
 
 fun main() {
@@ -20,25 +20,33 @@ class Day24(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
             val inArea = intersectionPoint.x in area && intersectionPoint.y in area
             inFuture && inArea
         }
-
-//        val i1=0
-//        val i2=3
-//        val intersectionPoint = movingPointList[i1].toHailLine().intersects(movingPointList[i2].toHailLine())
-//        println(movingPointList[i1].isInFuture(intersectionPoint))
-//        println(movingPointList[i2].isInFuture(intersectionPoint))
         return xx.size
     }
 
     override fun resultPartTwo(): Any {
-        return "TODO"
+//      equations to solve:
+//        (x-xi)*(yv-yvi) = (y-yi)*(xv-xvi)
+//        (x-xi)*(zv-zvi) = (z-zi)*(xv-xvi)
+//      where (x,y,z,xv,yv,zv are the location and speed coordinates to find.
+//      and (xi,yi,zi,xvi,yvi,zvi are the location and speed coordinates from the test set, for i in all testlines
+//      (and probably you only ned the first three test lines, since that gives you a total of six equations (for six unknowns)
+
+        movingPointList.take(3).forEach {mp->
+            val (x1, y1, z1) = mp.location
+            val (xv1, yv1, zv1) = mp.speed
+            println("(x-$x1)*(yv-$yv1) = (y-$y1)*(xv-$xv1),")
+            println("(x-$x1)*(zv-$zv1) = (z-$z1)*(xv-$xv1),")
+        }
+
+        return "NOT DONE, USE AN EQUATION SOLVER"
     }
 }
 //20, 19, 15 @  1, -5, -3
-data class MovingPoint(val location: Point3D, val speed: Speed) {
+data class MovingPoint(val location: Point3DLong, val speed: Speed) {
     companion object{
         fun of(raw: String): MovingPoint {
-            val p1 = Point3D.of(raw.split(" @ ")[0])
-            val p2 = Point3D.of(raw.split(" @ ")[1])
+            val p1 = Point3DLong.of(raw.split(" @ ")[0])
+            val p2 = Point3DLong.of(raw.split(" @ ")[1])
             return MovingPoint(
                 location = p1,
                 speed = Speed(p2.x, p2.y, p2.z)
@@ -47,10 +55,7 @@ data class MovingPoint(val location: Point3D, val speed: Speed) {
     }
 
     fun toHailLine(): HailLine {
-        return HailLine.of(
-            p1=location,
-            p2=location.plusXYZ(speed.x, speed.y, speed.z)
-        )
+        return HailLine.of(this)
     }
 
     fun isInFuture(aPoint: Point3DDouble): Boolean {
@@ -68,13 +73,19 @@ data class MovingPoint(val location: Point3D, val speed: Speed) {
 data class Speed(val x: Long, val y: Long, val z: Long) {
 }
 
-data class HailLine(val a: Double, val b: Double) {
+data class HailLine(val a: Double, val b: Double, val c: Double) {
     companion object {
-        fun of (p1: Point3D, p2:Point3D): HailLine {
+        fun of (p1: Point3DLong, p2:Point3DLong): HailLine {
             //y = aX + b
             val a = (p2.y-p1.y).toDouble() / (p2.x - p1.x).toDouble()
             val b = p1.y - a*p1.x
-            return HailLine(a, b)
+            return HailLine(a, b, 0.0)
+        }
+        fun of (mp: MovingPoint): HailLine {
+            //y = aX + b
+            val a = mp.speed.y.toDouble()/mp.speed.x.toDouble()
+            val b = mp.location.y - a * mp.location.x
+            return HailLine(a, b, 0.0)
         }
     }
 
