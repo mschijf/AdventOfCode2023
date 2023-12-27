@@ -2,7 +2,6 @@ package adventofcode2023
 
 import tool.coordinate.twodimensional.Point
 import tool.coordinate.twodimensional.pos
-import tool.coordinate.twodimensional.posRange
 
 fun main() {
     Day21(test=false).showResult()
@@ -17,18 +16,16 @@ class Day21(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
 
     override fun resultPartOne(): Any {
         val stepsToDo = if (test) 6 else 64
-        return minimalPathToAllFields().filterValues { it <= stepsToDo && (it % 2) == (stepsToDo % 2)}.count()
-//        return doSteps(stepsToDo) //alternative
+        return doSteps(stepsToDo)
+        //alternative:
+        //  return minimalPathToAllFields().filterValues { it <= stepsToDo && (it % 2) == (stepsToDo % 2)}.count()
     }
 
     override fun resultPartTwo(): Any {
         if (test) {
             return "we're not gonna run this one for test"
         }
-        val stepsToDo = 26_501_365 //26501365
-        println("Correct answer:597102953699891")
-
-        return solve2(stepsToDo)
+        return solve2()
     }
 
     private fun doSteps(maxSteps: Int): Int {
@@ -67,49 +64,41 @@ class Day21(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
         return result
     }
 
-    private fun solve2(stepsToDo: Int):Any {
+    private fun solve2():Any {
+        val stepsToDo = 26_501_365 //26501365
         val numStepCycles = (stepsToDo - (gridSize / 2)) / gridSize
 
         // we need to do a call of doStepsPart2(26_501_365), but that takes of course way too long
         // we can find out a sequence in growth if we do some steps (see explanation below all code):
         //
 
-        val stepIncrements = (0..2).map { incr -> (gridSize / 2) + (gridSize * incr) }
-        val reachableTileCounts = stepIncrements.map { doStepsPart2(it) }
-//        val reachableTileCounts = listOf(3691, 32975, 91439)
+        val stepIncrements = (0..3).map { incr -> (gridSize / 2) + (gridSize * incr) }
+        val reachableTilesCountList = stepIncrements.map { doStepsPart2(it) }
+//        val reachableTileCounts = listOf(3691, 32975, 91439, 179083)
 
         // if we check the differences (use day 9 solution for that),
-        val diffs = reachableTileCounts.sequenceOfdifferences()
-
+        val diffs = reachableTilesCountList.sequenceOfDifferences()
+        println(diffs.joinToString("\n"))
         // we can find out that the differences (of the differences of the differences...) become constant:
-        // we can find out that, this already is after three rounds:
+        // we can find out that, this already is after four rounds for our input:
         //
-        //        [3691, 32975, 91439, 179083, 295907]
-        //        [29284, 58464, 87644, 116824]
-        //        [29180, 29180, 29180]
+        //        [3691, 32975, 91439, 179083]
+        //        [29284, 58464, 87644]
+        //        [29180, 29180]
 
-        // now we can use that to extrapolate this a number of times, by subsequentially calculating the last number of the lists:
+        // now we can use that to extrapolate this a number of times, by sub sequentially calculating the last number of the diff-lists:
 
         val lastNumbers = diffs.map{it.last().toLong()}.toMutableList()
-
-        repeat(numStepCycles-2) {
+        repeat(numStepCycles-(diffs[0].size-1)) {
             for (i in lastNumbers.size - 2 downTo 0) {
                 lastNumbers[i] += lastNumbers[i+1]
             }
         }
+        println("Correct answer:597102953699891")
         return lastNumbers[0]
-
-//        var last0 = diffs[2].last().toLong()
-//        var last1 = diffs[1].last().toLong()
-//        var last2 = diffs[0].last().toLong()
-//        repeat(numStepCycles-2) {
-//            last1 = last0 + last1
-//            last2 = last2 + last1
-//        }
-//        return last2
     }
 
-    private fun List<Int>.sequenceOfdifferences() : List<List<Int>> {
+    private fun List<Int>.sequenceOfDifferences() : List<List<Int>> {
         val sequenceOfDifferences = mutableListOf<List<Int>>()
         var next = this
         while (next.any{it != 0}) {
