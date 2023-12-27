@@ -1,4 +1,4 @@
-package tool.math
+package tool.PrimaryTypeFunctions
 
 /**
  * returns a list of the digits. The lowest digit will be put at index 0.
