@@ -1,6 +1,8 @@
 package adventofcode2023
 
 import tool.coordinate.twodimensional.Point
+import tool.coordinate.twodimensional.pos
+import tool.coordinate.twodimensional.posRange
 
 fun main() {
     Day21(test=false).showResult()
@@ -9,75 +11,24 @@ fun main() {
 class Day21(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInputFile = true) {
 
     private val wholeGrid = inputAsGrid()
-    private val maxX = wholeGrid.keys.maxOf { it.x }
-    private val maxY = wholeGrid.keys.maxOf { it.y }
-    private val sizeX = wholeGrid.keys.maxOf { it.x } + 1
-    private val sizeY = wholeGrid.keys.maxOf { it.y } + 1
-
     private val gardenPlots = wholeGrid.filterValues { it == '.' || it == 'S' }.keys
     private val start = wholeGrid.filterValues { it == 'S' }.keys.first()
+    private val gridSize = wholeGrid.keys.maxOf { it.y } + 1 //note that input is a rectangle
 
     override fun resultPartOne(): Any {
         val stepsToDo = if (test) 6 else 64
         return minimalPathToAllFields().filterValues { it <= stepsToDo && (it % 2) == (stepsToDo % 2)}.count()
-//        return doSteps(stepsToDo)
+//        return doSteps(stepsToDo) //alternative
     }
 
     override fun resultPartTwo(): Any {
         if (test) {
-            return "we're mnot gonne run this one for test"
+            return "we're not gonna run this one for test"
         }
-
         val stepsToDo = 26_501_365 //26501365
-        val minPathToAllFields = minimalPathToAllFields()
+        println("Correct answer:597102953699891")
 
-        // clever thing: 26_501_365 is not just a number, it is 202300 * 131 + 65 (thanks to a beautiful read on:
-        // https://github.com/villuna/aoc23/wiki/A-Geometric-solution-to-advent-of-code-2023,-day-21
-
-        if (sizeX != sizeY) {
-            return "The total starting grid  needs to be square. this doesn't work for rectangles"
-        }
-
-        val gridSize = sizeX
-        val numberOfGridsReachable = (stepsToDo - gridSize/2) / gridSize
-
-        val halfGrid = gridSize / 2
-        val countEvenInGrid = minPathToAllFields.values.count { it % 2 == 0 }
-        val countOddInGrid = minPathToAllFields.values.count { it % 2 == 1 }
-        val countEvenCornersInGrid = minPathToAllFields.values.count{ it % 2 == 0 && it > halfGrid }
-        val countOddCornersInGrid = minPathToAllFields.values.count{ it % 2 == 1 && it > halfGrid }
-        val n = numberOfGridsReachable.toLong()
-
-        //597_101_484_387_726 too low
-        //wrong: 597_102_953_902_191
-        //       597_102_953_902_191 rolf
-        //597_102_954_104_491 too high
-
-        //597_102_954_104_491
-
-        //597_102_953_902_191
-
-        //297_327_121_745_579
-
-        println("oddTileCount: ${(n+1L)*(n+1L)}")
-        println("evenTileCount: ${n.toLong()*n}")
-        println("oddPoints: $countOddInGrid")
-        println("evenPoints: $countEvenInGrid")
-
-        println("oddCornerCount: ${n+1L}")
-        println("evenCornerCount: $n")
-        println("oddCornerPoints: $countOddCornersInGrid")
-        println("evenCornerPoints: $countEvenCornersInGrid")
-
-
-        val p2 = ((n+1)*(n+1)) * countOddInGrid +
-                (n*n) * countEvenInGrid -
-                (n+1) * countOddCornersInGrid +
-                n * countEvenCornersInGrid -
-                n
-
-
-        return p2
+        return solve2(stepsToDo)
     }
 
     private fun doSteps(maxSteps: Int): Int {
@@ -89,55 +40,180 @@ class Day21(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
         return visited.size
     }
 
+    private fun doStepsPart2(maxSteps: Int): Int {
+        var visited = setOf<Point>(start)
+
+        repeat(maxSteps) {
+            visited = visited.flatMap {
+                pos -> pos.neighbors().filter {nb->
+                    nb.mappedPoint(gridSize) in gardenPlots
+                }
+            }.toSet()
+        }
+        return visited.size
+    }
+
+
     private fun minimalPathToAllFields(): Map<Point, Int> {
         val result = mutableMapOf<Point, Int>()
         val queue = ArrayDeque<Pair<Point, Int>>().apply{add(Pair(start, 0))}
-        val visited = mutableSetOf<Point>().apply { add(start) }
         while (queue.isNotEmpty()) {
             val (current, stepsDone) = queue.removeFirst()
-            result[current] = stepsDone
-            current.neighbors().filter { it in gardenPlots }.filter {it !in visited}.forEach {nb->
-                visited += nb
+            current.neighbors().filter { it in gardenPlots }.filter {it !in result}.forEach {nb->
+                result[nb] = stepsDone+1
                 queue.add(Pair(nb, stepsDone+1))
             }
         }
         return result
     }
 
+    private fun solve2(stepsToDo: Int):Any {
+        val numStepCycles = (stepsToDo - (gridSize / 2)) / gridSize
+
+        // we need to do a call of doStepsPart2(26_501_365), but that takes of course way too long
+        // we can find out a sequence in growth if we do some steps (see explanation below all code):
+        //
+
+        val stepIncrements = (0..2).map { incr -> (gridSize / 2) + (gridSize * incr) }
+        val reachableTileCounts = stepIncrements.map { doStepsPart2(it) }
+//        val reachableTileCounts = listOf(3691, 32975, 91439)
+
+        // if we check the differences (use day 9 solution for that),
+        val diffs = reachableTileCounts.sequenceOfdifferences()
+
+        // we can find out that the differences (of the differences of the differences...) become constant:
+        // we can find out that, this already is after three rounds:
+        //
+        //        [3691, 32975, 91439, 179083, 295907]
+        //        [29284, 58464, 87644, 116824]
+        //        [29180, 29180, 29180]
+
+        // now we can use that to extrapolate this a number of times, by subsequentially calculating the last number of the lists:
+
+        val lastNumbers = diffs.map{it.last().toLong()}.toMutableList()
+
+        repeat(numStepCycles-2) {
+            for (i in lastNumbers.size - 2 downTo 0) {
+                lastNumbers[i] += lastNumbers[i+1]
+            }
+        }
+        return lastNumbers[0]
+
+//        var last0 = diffs[2].last().toLong()
+//        var last1 = diffs[1].last().toLong()
+//        var last2 = diffs[0].last().toLong()
+//        repeat(numStepCycles-2) {
+//            last1 = last0 + last1
+//            last2 = last2 + last1
+//        }
+//        return last2
+    }
+
+    private fun List<Int>.sequenceOfdifferences() : List<List<Int>> {
+        val sequenceOfDifferences = mutableListOf<List<Int>>()
+        var next = this
+        while (next.any{it != 0}) {
+            sequenceOfDifferences.add(next)
+            next = next.zipWithNext { a, b -> b-a }
+        }
+        return sequenceOfDifferences
+    }
+
+
+    private fun Point.mappedPoint(gridSize: Int) = pos(Math.floorMod(this.x, gridSize), Math.floorMod(this.y, gridSize))
 }
 
 
-//let p2 = ((n+1)*(n*1)) * odd_full + (n*n) * even_full - (n+1) * odd_corners + n * even_corners;
 
-//        val oddTileCount = (n + 1L) * (n + 1L)
-//        val evenTileCount = n * n.toLong()
-//        val oddCornerCount = n + 1
-//        val evenCornerCount = n
-
-//        val evenPoints = visited.filter { it.value % 2 == 0 }
-//        val oddPoints = visited.filter { it.value % 2 == 1 }
-//        val evenCornerPoints = visited.filter { it.value % 2 == 0 && it.value > size / 2 }
-//        val oddCornerPoints = visited.filter { it.value % 2 == 1 && it.value > size / 2 }
-
+// clever thing: 26_501_365 is not just a number, it is 202300 * 131 + 65
+// Thanks to: https://www.ericburden.work/blog/2023/12/21/advent-of-code-day-21/
 //
-//        val total = (oddTileCount * oddPoints.size) +
-//                (evenTileCount * evenPoints.size) -
-//                (oddCornerCount * oddCornerPoints.size) +
-//                (evenCornerCount * evenCornerPoints.size) -
-//                n
-
-
-//        val n = (maxSteps - grid.width() / 2) / grid.width() // 202_300
-//        // For n=202300, which is even, we find out that there are (n + 1)^2 odd input-squares and n^2 even input-squares.
-//        val oddTileCount = (n + 1L) * (n + 1L)
-//        val evenTileCount = n * n.toLong()
+// ALso a nice read: https://github.com/villuna/aoc23/wiki/A-Geometric-solution-to-advent-of-code-2023,-day-21
 //
-//        // Some corners (odd) have to be cut out of our square, the other corners (even) have to be added.
-//        // For each of the 4 corners, there are (n + 1) odd ones, and n even ones.
-//        val oddCornerCount = n + 1
-//        val evenCornerCount = n
-//        val total = (oddTileCount * oddPoints.size) +
-//                (evenTileCount * evenPoints.size) -
-//                (oddCornerCount * oddCornerPoints.size) +
-//                (evenCornerCount * evenCornerPoints.size) -
-//                n
+
+//        /*
+//         And this is where it starts to get a bit...wonky. We can observe from
+//         the input that the number of steps the elf wants to take is a multiple
+//         of the grid size + (grid size // 2). The grid is 131 tiles square, so
+//         we can see that 26501365 = n * 131 + 65, with n = 202,300. We also
+//         note that, in the real input, there is a clear path from the start to
+//         each edge and each edge is clear all the way around. Additionally, the
+//         input forms a _diamond_ shape with a clear lane all the way around the
+//         manhattan distance of (grid size / 2) from the start. So, this means
+//         our zoomed out grid looks like:
+//
+//                2....2
+//                ..11..
+//                ..11..
+//                2....2
+//
+//        where the `1`'s represent the inner section of obstacles and the `2`'s
+//        represent the outer section of obstacles, which tiles to:
+//
+//                2....22....22....22....22....2
+//                ..11....11....11....11....11..
+//                ..11....11....11....11....11..
+//                2....22....22....22....22....2
+//                2....22....22....22....22....2
+//                ..11....11....11....11....11..
+//                ..11....11....11....11....11..
+//                2....22....22....22....22....2
+//                2....22....22....22....22....2
+//                ..11....11....11....11....11..
+//                ..11....11....11....11....11..
+//                2....22....22....22....22....2
+//                2....22....22....22....22....2
+//                ..11....11....11....11....11..
+//                ..11....11....11....11....11..
+//                2....22....22....22....22....2
+//                2....22....22....22....22....2
+//                ..11....11....11....11....11..
+//                ..11....11....11....11....11..
+//                2....22....22....22....22....2
+//
+//        So, without assuming that the `1` set of rocks and the `2` set of rocks
+//        are identical, we have alternating blocks of obstacles that form a
+//        repeating ring-like pattern around the center. We can then proceed on
+//        the assumption that these rings form the basis of a pattern in our
+//        output, like:
+//
+//            - At (grid size / 2) steps, the elf's walking range encompasses the
+//              `1` set of obstacles in the center.
+//            - At (grid size / 2) + (grid size) steps, the elf's range now
+//              encompasses the entire first ring of obstacles, including 5 groups
+//              of `1`s and 4 groups of `2`s.
+//            - At (grid size / 2) + (grid size * 2), the elf's range now
+//              encompasses the first two rings of obstacles, including 13 groups
+//              of `1`'s and 12 groups of `2`'s.
+//
+//        Because the number of obstacle groups included is scaling in some
+//        predictable fashion with an increase in number of steps by (grid size),
+//        we are able to manually find the first few results for the function
+//        steps -> reachable tiles and extrapolate the answer from there.
+//        */
+//
+//        // Taking the first four results of steps -> reachable tiles for
+//        // step sizes at (grid size // 2), (grid size // 2) + (grid size),
+//        // (grid size // 2) + (grid size * 2), (grid size // 2) + (grid size * 3)...
+//        val stepIncrements = (0..3).map { incr ->
+//            (map.grid.size / 2) + (map.grid.size * incr)
+//        }
+//        val reachableTileCounts = stepIncrements.map { map.reachableTiles(it).toLong() }
+//            .toMutableList()
+//
+//        /*
+//        For my input, I get [3755, 33494, 92811, 181706] for these first four
+//        counts of reachable tiles. The increase isn't linear, however, if we
+//        repeatedly take the differences between the values in sequence...
+//
+//            [3755, 33494, 92811, 181706]
+//              [29739, 59317, 88895]
+//                  [29578, 29578]
+//                        [0]
+//
+//        It's Day 9! Or, rather, it's a polynomial sequence. There's definitely
+//        math that can be done here to derive a formula for predicting the next
+//        values based on this, but for my own sanity, I'm going to use the same
+//        method from Day 9.
+//         */
+//
