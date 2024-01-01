@@ -52,7 +52,6 @@ class Day24(test: Boolean) : PuzzleSolverAbstract(test, puzzleName="TBD", hasInp
 }
 
 data class MovingPoint(val location: Point3DLong, val speed: Speed) {
-    private val slope: Double = if (speed.x == 0L) Double.NaN else speed.y / speed.x.toDouble()
 
     companion object {
         //20, 19, 15 @  1, -5, -3
