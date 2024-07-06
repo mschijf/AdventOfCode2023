@@ -1,5 +1,7 @@
 package adventofcode2023
 
+// basic template
+
 fun main() {
     Day00(test=true).showResult()
 }
